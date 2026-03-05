@@ -1,0 +1,18 @@
+{
+  "name": "USEFULL Checkout Kiosk",
+  "short_name": "USEFULL",
+  "description": "Scan and check out reusable containers",
+  "start_url": "/index.html",
+  "display": "standalone",
+  "orientation": "landscape",
+  "theme_color": "#008C95",
+  "background_color": "#008C95",
+  "icons": [
+    {
+      "src": "USEFULL-Icon-Registered_Color.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
