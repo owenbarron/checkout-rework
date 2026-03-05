@@ -236,7 +236,7 @@
                 className="w-full bg-white rounded-2xl px-6 py-4 border border-gray-100 shadow-lg flex flex-col items-center"
                 style={{ animation: 'scaleUp 0.4s cubic-bezier(0.16, 1, 0.3, 1)' }}
             >
-                <span className="font-display text-sm font-bold uppercase tracking-[0.2em] mb-1" style={{ color: TEAL }}>
+                <span className="font-display font-bold uppercase tracking-[0.2em] mb-1" style={{ color: TEAL, fontSize: '1.03rem' }}>
                     Ready for Checkout
                 </span>
                 <div
@@ -244,11 +244,11 @@
                     style={{ animation: justScanned ? 'countPop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1)' : 'none' }}
                     key={count}
                 >
-                    <span className="font-display font-black text-slate-800 leading-none" style={{ fontSize: '9rem' }}>
+                    <span className="font-display font-black text-slate-800 leading-none" style={{ fontSize: '10.53rem' }}>
                         {count}
                     </span>
                 </div>
-                <span className="font-body text-base font-semibold uppercase tracking-wider text-gray-400 -mt-1">
+                <span className="font-body font-semibold uppercase tracking-wider text-gray-400 -mt-1" style={{ fontSize: '1.17rem' }}>
                     Container{count !== 1 ? 's' : ''}
                 </span>
                 <div
@@ -263,7 +263,7 @@
                             className="w-4 h-4"
                             style={{ color: TEAL, strokeDasharray: 24, animation: justScanned ? 'checkDraw 0.3s ease-out forwards' : 'none' }}
                         />
-                        <span className="text-sm font-display font-black uppercase tracking-wider" style={{ color: TEAL }}>Added</span>
+                        <span className="font-display font-black uppercase tracking-wider" style={{ color: TEAL, fontSize: '1.03rem' }}>Added</span>
                     </div>
                 </div>
             </div>
@@ -471,13 +471,13 @@
                     </div>
 
                     {/* RIGHT: Three-zone column — logo top, content center, download bottom */}
-                    <div className="flex-1 flex flex-col min-w-0 px-4 pt-8 pb-5">
+                    <div className="flex-1 flex flex-col min-w-0 px-4 pt-2 pb-5">
 
                         {/* Logo — pinned to top, never moves */}
-                        <div className="flex flex-col items-center pb-2">
-                            <UsefullLogo className="h-16 w-auto" />
+                        <div className="flex flex-col items-center pb-0">
+                            <UsefullLogo style={{ height: '4.68rem' }} className="w-auto" />
                             {!hasItems && (
-                                <p className="font-display font-bold uppercase tracking-[0.22em] text-base mt-1.5" style={{ color: TEAL }}>
+                                <p className="font-display font-bold uppercase tracking-[0.22em] mt-1" style={{ color: TEAL, fontSize: '1.17rem' }}>
                                     Checkout Station
                                 </p>
                             )}
@@ -488,11 +488,11 @@
                             <div className="text-center">
                                 <h2
                                     className="font-display font-extrabold leading-tight"
-                                    style={{ fontSize: '2.4rem', color: TEAL }}
+                                    style={{ fontSize: '2.81rem', color: TEAL }}
                                 >
                                     {hasItems ? 'Scan more containers' : 'Scan your containers'}
                                 </h2>
-                                <p className="font-body text-gray-500 mt-3 leading-relaxed" style={{ fontSize: '1.2rem' }}>
+                                <p className="font-body text-gray-500 mt-3 leading-relaxed" style={{ fontSize: '1.4rem' }}>
                                     {hasItems
                                         ? 'Or scan your QR code to finish'
                                         : 'Hold each container in front of the camera'}
@@ -509,7 +509,7 @@
                             {hasItems && status !== 'success' ? (
                                 <button
                                     onClick={handleCancel}
-                                    className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-display text-sm font-bold uppercase tracking-wider border border-red-200 text-red-500 hover:bg-red-50 transition-colors"
+                                    className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-display font-bold uppercase tracking-wider border border-red-200 text-red-500 hover:bg-red-50 transition-colors" style={{ fontSize: '1.03rem' }}
                                 >
                                     <IconX className="w-4 h-4" />
                                     Cancel
@@ -520,7 +520,7 @@
                                     className="flex items-center gap-3 px-5 py-3 rounded-xl bg-white border border-gray-200 shadow-sm hover:bg-gray-50 transition-colors"
                                 >
                                     <img src="../app-download.png" alt="" className="w-7 h-7 shrink-0" style={{ filter: `brightness(0) saturate(100%) invert(36%) sepia(85%) saturate(500%) hue-rotate(150deg)` }} />
-                                    <span className="font-body text-sm font-medium text-gray-600">Download the app to get your USEFULL QR code!</span>
+                                    <span className="font-body font-medium text-gray-600" style={{ fontSize: '1.03rem' }}>Download the app to get your USEFULL QR code!</span>
                                 </button>
                             )}
                         </div>
