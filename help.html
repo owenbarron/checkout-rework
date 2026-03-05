@@ -53,9 +53,9 @@
         <section>
             <h2 class="font-display font-bold text-2xl text-gray-900 mb-3">What you're reviewing</h2>
             <p class="text-gray-600 leading-relaxed max-w-2xl">
-                We've built two versions of the USEFULL checkout kiosk as Progressive Web Apps (PWAs).
-                Both work identically — you can scan real QR codes using your device's front camera.
-                The difference is layout and visual approach. Your feedback will help us decide which to ship.
+                We've built three versions of the USEFULL checkout kiosk as Progressive Web Apps (PWAs).
+                All three work identically — you can scan real QR codes using your device's front camera.
+                The difference is layout and visual approach. We have a recommendation below, and welcome your feedback.
             </p>
         </section>
 
@@ -109,42 +109,95 @@
             </div>
 
             <p class="mt-4 text-sm text-gray-500 max-w-2xl">
-                The two new versions below address all three of these, with different layout approaches. The goal is to find which feels most natural in a real checkout context.
+                The three new versions below address all three of these, with different layout approaches. The goal is to find which feels most natural in a real checkout context.
             </p>
         </section>
 
-        <!-- The two versions -->
+        <!-- Recommendation -->
         <section>
-            <h2 class="font-display font-bold text-2xl text-gray-900 mb-6">The two versions</h2>
-            <div class="grid sm:grid-cols-2 gap-5">
-
-                <a href="https://owenbarron.github.io/checkout-rework/" target="_blank"
-                   class="block rounded-2xl border border-gray-200 bg-white p-6 shadow-sm hover:shadow-md hover:border-teal transition-all group">
-                    <div class="flex items-start justify-between mb-4">
-                        <span class="inline-block px-3 py-1 rounded-full text-xs font-display font-bold tracking-wide"
-                              style="background: #E6F4F5; color: #008C95;">Version A</span>
-                        <svg class="w-4 h-4 text-gray-300 group-hover:text-teal transition-colors mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+            <div class="rounded-2xl overflow-hidden" style="background: #008C95;">
+                <div class="p-6 flex gap-4 items-start">
+                    <div class="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center shrink-0 mt-0.5">
+                        <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
                         </svg>
                     </div>
-                    <h3 class="font-display font-bold text-lg text-gray-900 mb-1">Full-screen camera</h3>
-                    <p class="text-gray-500 text-sm leading-relaxed">Camera fills the entire screen with a centered scan reticle. Overlaid text and counters. Immersive, minimal chrome.</p>
-                    <div class="mt-4 text-xs font-mono text-gray-400 break-all">owenbarron.github.io/checkout-rework/</div>
+                    <div>
+                        <h2 class="font-display font-bold text-lg text-white mb-1">Our recommendation: Version C — Full height</h2>
+                        <p class="text-white/80 text-sm leading-relaxed max-w-2xl">
+                            The tall camera rectangle matches the natural aspect of holding a container upright in front of a counter-top kiosk.
+                            The hero-sized USEFULL wordmark creates immediate brand recognition at arm's length.
+                            The right column — logo pinned top, instructions centered, download CTA anchored bottom — uses every pixel efficiently with no dead space.
+                            Version B is a close second with a cleaner, more structured feel; Version A is the most immersive with its full-screen live camera.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- The three versions -->
+        <section>
+            <h2 class="font-display font-bold text-2xl text-gray-900 mb-6">The three versions</h2>
+            <div class="space-y-4">
+
+                <!-- Version C — Recommended (featured) -->
+                <a href="https://owenbarron.github.io/checkout-rework/fullheight/" target="_blank"
+                   class="block rounded-2xl border-2 bg-white shadow-sm hover:shadow-md transition-all group overflow-hidden"
+                   style="border-color: #008C95;">
+                    <img src="screenshots/fullheight-screenshot.png" alt="Version C screenshot" class="w-full object-cover" style="height: 220px; object-position: top;">
+                    <div class="p-6">
+                        <div class="flex items-start justify-between mb-3">
+                            <div class="flex items-center gap-2 flex-wrap">
+                                <span class="inline-block px-3 py-1 rounded-full text-xs font-display font-bold tracking-wide" style="background: #008C95; color: white;">★ Recommended</span>
+                                <span class="inline-block px-3 py-1 rounded-full text-xs font-display font-bold tracking-wide" style="background: #E6F4F5; color: #008C95;">Version C</span>
+                            </div>
+                            <svg class="w-4 h-4 text-gray-300 group-hover:text-teal transition-colors mt-1 shrink-0 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+                            </svg>
+                        </div>
+                        <h3 class="font-display font-bold text-lg text-gray-900 mb-1">Full height</h3>
+                        <p class="text-gray-500 text-sm leading-relaxed">No header bar. Camera fills the full height on the left (up to 50% width). USEFULL logo, instructions, and counter in a centered right column. Best use of vertical space for a counter-top kiosk.</p>
+                        <div class="mt-4 text-xs font-mono text-gray-400 break-all">owenbarron.github.io/checkout-rework/fullheight/</div>
+                    </div>
                 </a>
 
-                <a href="https://owenbarron.github.io/checkout-rework/alt/" target="_blank"
-                   class="block rounded-2xl border border-gray-200 bg-white p-6 shadow-sm hover:shadow-md hover:border-teal transition-all group">
-                    <div class="flex items-start justify-between mb-4">
-                        <span class="inline-block px-3 py-1 rounded-full text-xs font-display font-bold tracking-wide"
-                              style="background: #E6F4F5; color: #008C95;">Version B</span>
-                        <svg class="w-4 h-4 text-gray-300 group-hover:text-teal transition-colors mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
-                        </svg>
-                    </div>
-                    <h3 class="font-display font-bold text-lg text-gray-900 mb-1">Split panel</h3>
-                    <p class="text-gray-500 text-sm leading-relaxed">Large camera box on the left, info and counter on the right. White header, clean card UI. More structured layout.</p>
-                    <div class="mt-4 text-xs font-mono text-gray-400 break-all">owenbarron.github.io/checkout-rework/alt/</div>
-                </a>
+                <div class="grid sm:grid-cols-2 gap-4">
+
+                    <!-- Version B -->
+                    <a href="https://owenbarron.github.io/checkout-rework/alt/" target="_blank"
+                       class="block rounded-2xl border border-gray-200 bg-white shadow-sm hover:shadow-md hover:border-teal transition-all group overflow-hidden">
+                        <img src="screenshots/white-screenshot.png" alt="Version B screenshot" class="w-full object-cover border-b border-gray-100" style="height: 180px; object-position: top;">
+                        <div class="p-6">
+                            <div class="flex items-start justify-between mb-3">
+                                <span class="inline-block px-3 py-1 rounded-full text-xs font-display font-bold tracking-wide" style="background: #E6F4F5; color: #008C95;">Version B</span>
+                                <svg class="w-4 h-4 text-gray-300 group-hover:text-teal transition-colors mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+                                </svg>
+                            </div>
+                            <h3 class="font-display font-bold text-lg text-gray-900 mb-1">Split panel</h3>
+                            <p class="text-gray-500 text-sm leading-relaxed">Large camera box on the left, info and counter on the right. White header, clean card UI. More structured layout.</p>
+                            <div class="mt-4 text-xs font-mono text-gray-400 break-all">owenbarron.github.io/checkout-rework/alt/</div>
+                        </div>
+                    </a>
+
+                    <!-- Version A -->
+                    <a href="https://owenbarron.github.io/checkout-rework/" target="_blank"
+                       class="block rounded-2xl border border-gray-200 bg-white shadow-sm hover:shadow-md hover:border-teal transition-all group overflow-hidden">
+                        <img src="screenshots/teal-screenshot.png" alt="Version A screenshot" class="w-full object-cover border-b border-gray-100" style="height: 180px; object-position: top;">
+                        <div class="p-6">
+                            <div class="flex items-start justify-between mb-3">
+                                <span class="inline-block px-3 py-1 rounded-full text-xs font-display font-bold tracking-wide" style="background: #E6F4F5; color: #008C95;">Version A</span>
+                                <svg class="w-4 h-4 text-gray-300 group-hover:text-teal transition-colors mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+                                </svg>
+                            </div>
+                            <h3 class="font-display font-bold text-lg text-gray-900 mb-1">Full-screen camera</h3>
+                            <p class="text-gray-500 text-sm leading-relaxed">Camera fills the entire screen with a centered scan reticle. Overlaid text and counters. Immersive, minimal chrome.</p>
+                            <div class="mt-4 text-xs font-mono text-gray-400 break-all">owenbarron.github.io/checkout-rework/</div>
+                        </div>
+                    </a>
+
+                </div>
 
             </div>
         </section>
@@ -154,7 +207,35 @@
             <h2 class="font-display font-bold text-2xl text-gray-900 mb-2">Demo videos</h2>
             <p class="text-gray-500 text-sm mb-6">Screen recordings show the full interaction flow. Real-world videos show the kiosk in use on a physical device.</p>
 
-            <div class="grid sm:grid-cols-2 gap-4">
+            <div class="space-y-4">
+
+                <!-- Version C — Recommended -->
+                <div class="rounded-2xl border-2 border-gray-200 bg-white overflow-hidden shadow-sm" style="border-color: #008C95;">
+                    <div class="px-5 pt-5 pb-3 flex items-center gap-2">
+                        <span class="inline-block px-3 py-1 rounded-full text-xs font-display font-bold tracking-wide" style="background: #008C95; color: white;">★ Recommended</span>
+                        <span class="inline-block px-3 py-1 rounded-full text-xs font-display font-bold tracking-wide" style="background: #E6F4F5; color: #008C95;">Version C — Full height</span>
+                    </div>
+                    <div class="flex flex-col gap-2 px-3 pb-4">
+                        <button onclick="openVideo('https://drive.google.com/file/d/1Do9Y0muhwb6it_Vqo3YWG-RW4TDuR6yw/preview', 'Version C — Screen Recording')"
+                            class="w-full flex items-center gap-4 px-4 py-3.5 rounded-xl hover:bg-gray-50 transition-colors text-left group">
+                            <div class="w-10 h-10 rounded-lg flex items-center justify-center shrink-0" style="background: #E6F4F5;">
+                                <svg class="w-5 h-5" style="color: #008C95;" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M21 3H3c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H3V5h18v14zM9 8l6 4-6 4V8z"/>
+                                </svg>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <p class="font-display font-semibold text-gray-800 text-sm">Screen recording</p>
+                                <p class="text-xs text-gray-400 mt-0.5">Full interaction walkthrough</p>
+                            </div>
+                            <svg class="w-4 h-4 text-gray-300 group-hover:text-teal transition-colors shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="grid sm:grid-cols-2 gap-4">
 
                 <!-- Version A -->
                 <div class="rounded-2xl border border-gray-200 bg-white overflow-hidden shadow-sm">
@@ -238,7 +319,9 @@
                     </div>
                 </div>
 
-            </div>
+                </div><!-- end grid -->
+
+            </div><!-- end space-y-4 -->
         </section>
 
         <!-- Video modal -->
