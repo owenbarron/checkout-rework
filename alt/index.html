@@ -74,6 +74,10 @@
             from { stroke-dashoffset: 24; }
             to   { stroke-dashoffset: 0; }
         }
+        @keyframes slideInRight {
+            from { transform: translateX(40px); opacity: 0; }
+            to   { transform: translateX(0);    opacity: 1; }
+        }
     </style>
 </head>
 <body>
@@ -492,10 +496,18 @@
             const [successData, setSuccessData]             = useState(null);
             const [justScanned, setJustScanned]             = useState(false);
             const [showDownloadModal, setShowDownloadModal] = useState(false);
+            const [isPortrait, setIsPortrait]               = useState(() => window.innerHeight > window.innerWidth);
 
             const hasItems    = items.length > 0;
             const showTimeout = hasItems && status !== 'success';
             const currentStep = hasItems ? 2 : 1;
+
+            useEffect(() => {
+                const mq = window.matchMedia('(orientation: portrait)');
+                const handler = (e) => setIsPortrait(e.matches);
+                mq.addEventListener('change', handler);
+                return () => mq.removeEventListener('change', handler);
+            }, []);
 
             useEffect(() => {
                 if (!showTimeout) { setTimeLeft(30); return; }
@@ -545,65 +557,136 @@
                     <Header currentStep={currentStep} />
                     <TimeoutBar timeLeft={timeLeft} isVisible={showTimeout} />
 
-                    {/* Main content area */}
-                    <div className="flex-1 flex overflow-hidden" style={{ padding: '20px 20px 20px 20px', gap: 20 }}>
+                    {isPortrait ? (
+                        <>
+                            {/* PORTRAIT: full-bleed camera with overlays */}
+                            <div className="flex-1 relative overflow-hidden">
+                                <CameraBox isScanning={status !== 'success'} />
 
-                        {/* LEFT: Large camera box — square, anchored near left edge */}
-                        <div className="relative shrink-0" style={{ aspectRatio: '1/1', height: '100%' }}>
-                            <CameraBox isScanning={status !== 'success'} />
-                            <ErrorToast message={error} />
-                        </div>
+                                {/* Instruction overlay — top center */}
+                                <div className="absolute top-5 left-0 right-0 flex justify-center pointer-events-none" style={{ animation: 'fadeIn 0.4s ease-out' }}>
+                                    <div className="px-8 py-4 rounded-2xl mx-4" style={{ backgroundColor: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)' }}>
+                                        <h2 className="text-white font-display font-extrabold text-3xl text-center leading-tight">
+                                            {hasItems ? 'Scan more containers' : 'Scan your containers'}
+                                        </h2>
+                                        <p className="text-white/70 font-body text-xl text-center mt-1">
+                                            {hasItems ? 'Or scan your QR code to finish' : 'Hold each container in front of the camera'}
+                                        </p>
+                                    </div>
+                                </div>
 
-                        {/* RIGHT: Info panel */}
-                        <div className="flex-1 flex flex-col justify-between min-w-0">
+                                {/* Counter card overlay — bottom right */}
+                                {hasItems && status !== 'success' && (
+                                    <div
+                                        className="absolute right-5 bottom-5 pointer-events-none"
+                                        style={{ animation: 'slideInRight 0.4s cubic-bezier(0.16, 1, 0.3, 1)' }}
+                                    >
+                                        <div
+                                            className="rounded-2xl p-5 flex flex-col items-center border border-white/20 shadow-2xl"
+                                            style={{ backgroundColor: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)' }}
+                                        >
+                                            <span className="font-display text-xs font-bold uppercase tracking-[0.2em] text-white/55 mb-1">Ready for Checkout</span>
+                                            <div
+                                                style={{ animation: justScanned ? 'countPop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1)' : 'none' }}
+                                                key={items.length}
+                                            >
+                                                <span className="font-display font-black text-white leading-none" style={{ fontSize: '5rem' }}>{items.length}</span>
+                                            </div>
+                                            <span className="font-body text-sm font-semibold uppercase tracking-wider text-white/45 mt-1">
+                                                Container{items.length !== 1 ? 's' : ''}
+                                            </span>
+                                            <div
+                                                className="mt-3 transition-all duration-300"
+                                                style={{ opacity: justScanned ? 1 : 0, transform: justScanned ? 'translateY(0)' : 'translateY(6px)' }}
+                                            >
+                                                <div className="flex items-center gap-2 px-3 py-1.5 rounded-full" style={{ backgroundColor: `${TEAL}33`, border: `1px solid ${TEAL}55` }}>
+                                                    <IconCheck className="w-3.5 h-3.5" style={{ color: '#6ee7b7' }} />
+                                                    <span className="text-xs font-display font-bold uppercase tracking-wider" style={{ color: '#6ee7b7' }}>Added</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
 
-                            {/* Instructions */}
-                            <div className="text-center">
-                                <h2
-                                    className="font-display font-extrabold leading-tight"
-                                    style={{ fontSize: '2.4rem', color: TEAL }}
-                                >
-                                    {hasItems ? 'Scan more containers' : 'Scan your containers'}
-                                </h2>
-                                <p className="font-body text-gray-500 mt-3 leading-relaxed" style={{ fontSize: '1.2rem' }}>
-                                    {hasItems
-                                        ? 'Or scan your QR code to finish'
-                                        : 'Hold each container in front of the camera'}
-                                </p>
+                                <ErrorToast message={error} />
                             </div>
 
-                            {/* Counter card — slides in when items are scanned */}
-                            {hasItems && status !== 'success' && (
-                                <CountCard count={items.length} justScanned={justScanned} />
-                            )}
-
-                            {/* Bottom: cancel (left) + download button (right) */}
-                            <div className="flex items-center justify-between gap-3">
-                                {hasItems ? (
+                            {/* Portrait footer strip */}
+                            <div className="w-full flex items-center justify-between px-5 shrink-0 border-t border-gray-100" style={{ height: 64, backgroundColor: '#fff' }}>
+                                <button
+                                    onClick={() => setShowDownloadModal(true)}
+                                    className="flex items-center gap-2.5 hover:opacity-70 transition-opacity"
+                                >
+                                    <img src="../app-download.png" alt="" className="w-7 h-7 shrink-0" style={{ filter: `brightness(0) saturate(100%) invert(36%) sepia(85%) saturate(500%) hue-rotate(150deg)` }} />
+                                    <span className="font-body text-sm font-medium text-gray-600">Download the USEFULL app to get started</span>
+                                </button>
+                                {hasItems && (
                                     <button
                                         onClick={handleCancel}
-                                        className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-display text-sm font-bold uppercase tracking-wider border border-red-200 text-red-500 hover:bg-red-50 transition-colors shrink-0"
+                                        className="flex items-center gap-2 px-4 py-2 rounded-xl font-display text-sm font-bold uppercase tracking-wider border border-red-200 text-red-500 hover:bg-red-50 transition-colors shrink-0 ml-4"
                                     >
                                         <IconX className="w-4 h-4" />
                                         Cancel
                                     </button>
-                                ) : <div />}
+                                )}
+                            </div>
+                        </>
+                    ) : (
+                        /* LANDSCAPE: two-column layout */
+                        <div className="flex-1 flex overflow-hidden" style={{ padding: '20px', gap: 20 }}>
 
-                                <button
-                                    onClick={() => setShowDownloadModal(true)}
-                                    className="flex items-center gap-3 px-5 py-3 rounded-xl bg-white border border-gray-200 shadow-sm hover:bg-gray-50 transition-colors"
-                                >
-                                    <img
-                                        src="../app-download.png"
-                                        alt=""
-                                        className="w-7 h-7 shrink-0"
-                                        style={{ filter: `brightness(0) saturate(100%) invert(36%) sepia(85%) saturate(500%) hue-rotate(150deg)` }}
-                                    />
-                                    <span className="font-body text-sm font-medium text-gray-600 text-left">Download the USEFULL app to get started</span>
-                                </button>
+                            {/* LEFT: Large camera box — square, anchored near left edge */}
+                            <div className="relative shrink-0" style={{ aspectRatio: '1/1', height: '100%' }}>
+                                <CameraBox isScanning={status !== 'success'} />
+                                <ErrorToast message={error} />
+                            </div>
+
+                            {/* RIGHT: Info panel */}
+                            <div className="flex-1 flex flex-col justify-between min-w-0">
+
+                                {/* Instructions */}
+                                <div className="text-center">
+                                    <h2
+                                        className="font-display font-extrabold leading-tight"
+                                        style={{ fontSize: '2.4rem', color: TEAL }}
+                                    >
+                                        {hasItems ? 'Scan more containers' : 'Scan your containers'}
+                                    </h2>
+                                    <p className="font-body text-gray-500 mt-3 leading-relaxed" style={{ fontSize: '1.2rem' }}>
+                                        {hasItems
+                                            ? 'Or scan your QR code to finish'
+                                            : 'Hold each container in front of the camera'}
+                                    </p>
+                                </div>
+
+                                {/* Counter card */}
+                                {hasItems && status !== 'success' && (
+                                    <CountCard count={items.length} justScanned={justScanned} />
+                                )}
+
+                                {/* Bottom: cancel (left) + download button (right) */}
+                                <div className="flex items-center justify-between gap-3">
+                                    {hasItems ? (
+                                        <button
+                                            onClick={handleCancel}
+                                            className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-display text-sm font-bold uppercase tracking-wider border border-red-200 text-red-500 hover:bg-red-50 transition-colors shrink-0"
+                                        >
+                                            <IconX className="w-4 h-4" />
+                                            Cancel
+                                        </button>
+                                    ) : <div />}
+
+                                    <button
+                                        onClick={() => setShowDownloadModal(true)}
+                                        className="flex items-center gap-3 px-5 py-3 rounded-xl bg-white border border-gray-200 shadow-sm hover:bg-gray-50 transition-colors"
+                                    >
+                                        <img src="../app-download.png" alt="" className="w-7 h-7 shrink-0" style={{ filter: `brightness(0) saturate(100%) invert(36%) sepia(85%) saturate(500%) hue-rotate(150deg)` }} />
+                                        <span className="font-body text-sm font-medium text-gray-600 text-left">Download the USEFULL app to get started</span>
+                                    </button>
+                                </div>
                             </div>
                         </div>
-                    </div>
+                    )}
 
                     <DownloadModal isOpen={showDownloadModal} onClose={() => setShowDownloadModal(false)} />
                     <SuccessModal data={status === 'success' ? successData : null} onDone={handleCancel} />
