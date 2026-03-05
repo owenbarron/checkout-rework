@@ -42,18 +42,7 @@
     <!-- Header -->
     <header style="background: #008C95;">
         <div class="max-w-4xl mx-auto px-6 py-8">
-            <svg viewBox="0 0 600 80" class="h-9 w-auto" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path fill="#fff" d="M34.09,57.72c-8.34,0-15.12-6.78-15.12-15.12V15.08H5.79v27.52c0,15.62,12.69,28.31,28.3,28.31s28.3-12.69,28.3-28.31V15.08h-13.18v27.52c0,8.34-6.78,15.12-15.12,15.12Z"/>
-                <path fill="#fff" d="M95.12,14.08c-15.62,0-28.31,12.69-28.31,28.3s12.69,28.3,28.31,28.3,28.3-12.69,28.3-28.3-12.69-28.3-28.3-28.3Zm0,43.61c-8.34,0-15.12-6.78-15.12-15.31s6.78-15.31,15.12-15.31,15.12,6.98,15.12,15.31-6.78,15.31-15.12,15.31Z"/>
-                <path fill="#fff" d="M166.16,14.08c-15.62,0-28.31,12.69-28.31,28.3s12.69,28.3,28.31,28.3,28.3-12.69,28.3-28.3-12.69-28.3-28.3-28.3Zm0,43.61c-8.34,0-15.12-6.78-15.12-15.31s6.78-15.31,15.12-15.31,15.12,6.98,15.12,15.31-6.78,15.31-15.12,15.31Z"/>
-                <path fill="#fff" d="M209.57,70.68h13.18V15.08h-13.18v55.6Z"/>
-                <path fill="#fff" d="M258.5,57.53V15.08h-13.18v55.6h38.36v-13.15h-25.18Z"/>
-                <path fill="#fff" d="M317.64,57.53V15.08h-13.18v55.6h38.36v-13.15h-25.18Z"/>
-                <path fill="#fff" d="M399.61,15.08h-39.61v55.6h39.61v-12.09h-26.43v-10.9h22.75v-11.73h-22.75v-8.79h26.43V15.08Z"/>
-                <path fill="#fff" d="M452.08,15.08l-10.3,34.22-10.3-34.22h-13.81l17.44,55.6h13.34l17.44-55.6h-13.81Z"/>
-                <path fill="#fff" d="M522.02,15.08h-39.61v55.6h39.61v-12.09h-26.43v-10.9h22.75v-11.73h-22.75v-8.79h26.43V15.08Z"/>
-                <path fill="#fff" d="M538.09,42.25c4.09,0,7.41,3.32,7.41,7.41s-3.32,7.41-7.41,7.41-7.41-3.32-7.41-7.41,3.32-7.41,7.41-7.41Zm0,13.84c3.57,0,6.43-2.87,6.43-6.43s-2.87-6.43-6.43-6.43-6.43,2.87-6.43,6.43,2.87,6.43,6.43,6.43Zm2.2-3.02l-1.46-2.53h-2.47v2.53h-.92v-7.17h3.29c1.55,0,2.44,1.07,2.44,2.32,0,.95-.52,1.8-1.43,2.13l1.59,2.71h-1.04Zm-3.93-6.25v2.8h2.35c.98,0,1.55-.7,1.55-1.4s-.58-1.4-1.55-1.4h-2.35Z"/>
-            </svg>
+            <img src="USEFULL-Logo-Registered_KnockOut.svg" alt="USEFULL" class="h-9 w-auto">
             <p class="text-white/70 font-body mt-2 text-base">Checkout Kiosk — Stakeholder Review Guide</p>
         </div>
     </header>
@@ -67,6 +56,60 @@
                 We've built two versions of the USEFULL checkout kiosk as Progressive Web Apps (PWAs).
                 Both work identically — you can scan real QR codes using your device's front camera.
                 The difference is layout and visual approach. Your feedback will help us decide which to ship.
+            </p>
+        </section>
+
+        <!-- Problem statement -->
+        <section>
+            <h2 class="font-display font-bold text-2xl text-gray-900 mb-3">What we started with</h2>
+            <p class="text-gray-600 leading-relaxed max-w-2xl mb-6">
+                The original kiosk design had several usability problems for counter-top deployment,
+                where users are standing a full arm's length away from the screen.
+            </p>
+
+            <div class="rounded-2xl border border-gray-200 bg-white shadow-sm overflow-hidden">
+                <div class="p-6 pb-0">
+                    <img src="screenshots/screenshot-cropped.png" alt="Original kiosk design" class="w-full rounded-xl border border-gray-100 shadow-sm">
+                </div>
+                <div class="grid sm:grid-cols-3 gap-0 divide-y sm:divide-y-0 sm:divide-x divide-gray-100 mt-6">
+                    <div class="p-6 flex items-start gap-4">
+                        <div class="w-8 h-8 rounded-full bg-red-50 border border-red-100 flex items-center justify-center shrink-0 mt-0.5">
+                            <svg class="w-4 h-4 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <p class="font-display font-semibold text-gray-800 text-sm">Camera view too small</p>
+                            <p class="text-sm text-gray-500 mt-1 leading-relaxed">The scan area was a small centered box — hard to line up when the device is flat on a counter and the user is standing above it.</p>
+                        </div>
+                    </div>
+                    <div class="p-6 flex items-start gap-4">
+                        <div class="w-8 h-8 rounded-full bg-red-50 border border-red-100 flex items-center justify-center shrink-0 mt-0.5">
+                            <svg class="w-4 h-4 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <p class="font-display font-semibold text-gray-800 text-sm">Text too small to read</p>
+                            <p class="text-sm text-gray-500 mt-1 leading-relaxed">Instructions, labels, and the container counter were sized for close-up reading — not for a user standing ~2 feet away.</p>
+                        </div>
+                    </div>
+                    <div class="p-6 flex items-start gap-4">
+                        <div class="w-8 h-8 rounded-full bg-amber-50 border border-amber-100 flex items-center justify-center shrink-0 mt-0.5">
+                            <svg class="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M12 3a9 9 0 100 18A9 9 0 0012 3z"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <p class="font-display font-semibold text-gray-800 text-sm">No functional footer</p>
+                            <p class="text-sm text-gray-500 mt-1 leading-relaxed">The original had only a decorative logo watermark at the bottom. The new designs add a persistent footer with a cancel action and app download link.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <p class="mt-4 text-sm text-gray-500 max-w-2xl">
+                The two new versions below address all three of these, with different layout approaches. The goal is to find which feels most natural in a real checkout context.
             </p>
         </section>
 
