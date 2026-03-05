@@ -965,12 +965,6 @@
                     {/* Success overlay */}
                     <SuccessModal data={status === 'success' ? successData : null} onDone={handleCancel} />
 
-                    {/* Dev simulation controls */}
-                    <DevControls
-                        onScanContainer={handleScanContainer}
-                        onScanBadContainer={handleScanBadContainer}
-                        onScanUser={handleScanUser}
-                    />
                 </div>
             );
         };

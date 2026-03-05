@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>USEFULL Checkout Kiosk — Stakeholder Guide</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        display: ['"Plus Jakarta Sans"', 'system-ui', 'sans-serif'],
+                        body: ['"DM Sans"', 'system-ui', 'sans-serif'],
+                    },
+                    colors: {
+                        teal: { DEFAULT: '#008C95', light: '#00B4BF', dark: '#006B72' }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'DM Sans', sans-serif; }
+        .step-num {
+            width: 2rem; height: 2rem; border-radius: 50%;
+            background: #008C95; color: white;
+            display: flex; align-items: center; justify-content: center;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            font-weight: 700; font-size: 0.875rem;
+            flex-shrink: 0;
+        }
+        .qr-card img { image-rendering: pixelated; }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800 font-body">
+
+    <!-- Header -->
+    <header style="background: #008C95;">
+        <div class="max-w-4xl mx-auto px-6 py-8">
+            <svg viewBox="0 0 600 80" class="h-9 w-auto" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path fill="#fff" d="M34.09,57.72c-8.34,0-15.12-6.78-15.12-15.12V15.08H5.79v27.52c0,15.62,12.69,28.31,28.3,28.31s28.3-12.69,28.3-28.31V15.08h-13.18v27.52c0,8.34-6.78,15.12-15.12,15.12Z"/>
+                <path fill="#fff" d="M95.12,14.08c-15.62,0-28.31,12.69-28.31,28.3s12.69,28.3,28.31,28.3,28.3-12.69,28.3-28.3-12.69-28.3-28.3-28.3Zm0,43.61c-8.34,0-15.12-6.78-15.12-15.31s6.78-15.31,15.12-15.31,15.12,6.98,15.12,15.31-6.78,15.31-15.12,15.31Z"/>
+                <path fill="#fff" d="M166.16,14.08c-15.62,0-28.31,12.69-28.31,28.3s12.69,28.3,28.31,28.3,28.3-12.69,28.3-28.3-12.69-28.3-28.3-28.3Zm0,43.61c-8.34,0-15.12-6.78-15.12-15.31s6.78-15.31,15.12-15.31,15.12,6.98,15.12,15.31-6.78,15.31-15.12,15.31Z"/>
+                <path fill="#fff" d="M209.57,70.68h13.18V15.08h-13.18v55.6Z"/>
+                <path fill="#fff" d="M258.5,57.53V15.08h-13.18v55.6h38.36v-13.15h-25.18Z"/>
+                <path fill="#fff" d="M317.64,57.53V15.08h-13.18v55.6h38.36v-13.15h-25.18Z"/>
+                <path fill="#fff" d="M399.61,15.08h-39.61v55.6h39.61v-12.09h-26.43v-10.9h22.75v-11.73h-22.75v-8.79h26.43V15.08Z"/>
+                <path fill="#fff" d="M452.08,15.08l-10.3,34.22-10.3-34.22h-13.81l17.44,55.6h13.34l17.44-55.6h-13.81Z"/>
+                <path fill="#fff" d="M522.02,15.08h-39.61v55.6h39.61v-12.09h-26.43v-10.9h22.75v-11.73h-22.75v-8.79h26.43V15.08Z"/>
+                <path fill="#fff" d="M538.09,42.25c4.09,0,7.41,3.32,7.41,7.41s-3.32,7.41-7.41,7.41-7.41-3.32-7.41-7.41,3.32-7.41,7.41-7.41Zm0,13.84c3.57,0,6.43-2.87,6.43-6.43s-2.87-6.43-6.43-6.43-6.43,2.87-6.43,6.43,2.87,6.43,6.43,6.43Zm2.2-3.02l-1.46-2.53h-2.47v2.53h-.92v-7.17h3.29c1.55,0,2.44,1.07,2.44,2.32,0,.95-.52,1.8-1.43,2.13l1.59,2.71h-1.04Zm-3.93-6.25v2.8h2.35c.98,0,1.55-.7,1.55-1.4s-.58-1.4-1.55-1.4h-2.35Z"/>
+            </svg>
+            <p class="text-white/70 font-body mt-2 text-base">Checkout Kiosk — Stakeholder Review Guide</p>
+        </div>
+    </header>
+
+    <main class="max-w-4xl mx-auto px-6 py-12 space-y-14">
+
+        <!-- Intro -->
+        <section>
+            <h2 class="font-display font-bold text-2xl text-gray-900 mb-3">What you're reviewing</h2>
+            <p class="text-gray-600 leading-relaxed max-w-2xl">
+                We've built two versions of the USEFULL checkout kiosk as Progressive Web Apps (PWAs).
+                Both work identically — you can scan real QR codes using your device's front camera.
+                The difference is layout and visual approach. Your feedback will help us decide which to ship.
+            </p>
+        </section>
+
+        <!-- The two versions -->
+        <section>
+            <h2 class="font-display font-bold text-2xl text-gray-900 mb-6">The two versions</h2>
+            <div class="grid sm:grid-cols-2 gap-5">
+
+                <a href="https://owenbarron.github.io/checkout-rework/" target="_blank"
+                   class="block rounded-2xl border border-gray-200 bg-white p-6 shadow-sm hover:shadow-md hover:border-teal transition-all group">
+                    <div class="flex items-start justify-between mb-4">
+                        <span class="inline-block px-3 py-1 rounded-full text-xs font-display font-bold tracking-wide"
+                              style="background: #E6F4F5; color: #008C95;">Version A</span>
+                        <svg class="w-4 h-4 text-gray-300 group-hover:text-teal transition-colors mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+                        </svg>
+                    </div>
+                    <h3 class="font-display font-bold text-lg text-gray-900 mb-1">Full-screen camera</h3>
+                    <p class="text-gray-500 text-sm leading-relaxed">Camera fills the entire screen with a centered scan reticle. Overlaid text and counters. Immersive, minimal chrome.</p>
+                    <div class="mt-4 text-xs font-mono text-gray-400 break-all">owenbarron.github.io/checkout-rework/</div>
+                </a>
+
+                <a href="https://owenbarron.github.io/checkout-rework/alt/" target="_blank"
+                   class="block rounded-2xl border border-gray-200 bg-white p-6 shadow-sm hover:shadow-md hover:border-teal transition-all group">
+                    <div class="flex items-start justify-between mb-4">
+                        <span class="inline-block px-3 py-1 rounded-full text-xs font-display font-bold tracking-wide"
+                              style="background: #E6F4F5; color: #008C95;">Version B</span>
+                        <svg class="w-4 h-4 text-gray-300 group-hover:text-teal transition-colors mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+                        </svg>
+                    </div>
+                    <h3 class="font-display font-bold text-lg text-gray-900 mb-1">Split panel</h3>
+                    <p class="text-gray-500 text-sm leading-relaxed">Large camera box on the left, info and counter on the right. White header, clean card UI. More structured layout.</p>
+                    <div class="mt-4 text-xs font-mono text-gray-400 break-all">owenbarron.github.io/checkout-rework/alt/</div>
+                </a>
+
+            </div>
+        </section>
+
+        <!-- Install instructions -->
+        <section>
+            <h2 class="font-display font-bold text-2xl text-gray-900 mb-2">Installing as a PWA</h2>
+            <p class="text-gray-500 text-sm mb-6">Installing gives you the full kiosk experience — no browser chrome, full screen. Takes about 10 seconds.</p>
+
+            <div class="grid sm:grid-cols-2 gap-5">
+
+                <!-- iOS -->
+                <div class="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+                    <div class="flex items-center gap-3 mb-5">
+                        <svg class="w-6 h-6 text-gray-700" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/>
+                        </svg>
+                        <h3 class="font-display font-bold text-gray-900">iPhone / iPad</h3>
+                    </div>
+                    <ol class="space-y-3">
+                        <li class="flex items-start gap-3">
+                            <span class="step-num">1</span>
+                            <span class="text-sm text-gray-600 pt-0.5">Open either link above in <strong class="text-gray-800">Safari</strong> (must be Safari, not Chrome)</span>
+                        </li>
+                        <li class="flex items-start gap-3">
+                            <span class="step-num">2</span>
+                            <span class="text-sm text-gray-600 pt-0.5">Tap the <strong class="text-gray-800">Share button</strong> at the bottom of the screen (box with an arrow pointing up)</span>
+                        </li>
+                        <li class="flex items-start gap-3">
+                            <span class="step-num">3</span>
+                            <span class="text-sm text-gray-600 pt-0.5">Scroll down and tap <strong class="text-gray-800">"Add to Home Screen"</strong></span>
+                        </li>
+                        <li class="flex items-start gap-3">
+                            <span class="step-num">4</span>
+                            <span class="text-sm text-gray-600 pt-0.5">Tap <strong class="text-gray-800">Add</strong> in the top right. The app icon will appear on your home screen.</span>
+                        </li>
+                    </ol>
+                </div>
+
+                <!-- Android -->
+                <div class="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+                    <div class="flex items-center gap-3 mb-5">
+                        <svg class="w-6 h-6 text-gray-700" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M17.6 9.48l1.84-3.18c.16-.31.04-.69-.26-.85-.29-.15-.65-.06-.83.22l-1.88 3.24c-1.44-.6-3.01-.93-4.47-.93-1.46 0-3.03.33-4.47.93L5.65 5.67c-.19-.29-.54-.37-.83-.22-.3.16-.42.54-.26.85L6.4 9.48C3.3 11.25 1.28 14.44 1 18h22c-.28-3.56-2.3-6.75-5.4-8.52zM7 15.25c-.69 0-1.25-.56-1.25-1.25s.56-1.25 1.25-1.25 1.25.56 1.25 1.25-.56 1.25-1.25 1.25zm10 0c-.69 0-1.25-.56-1.25-1.25s.56-1.25 1.25-1.25 1.25.56 1.25 1.25-.56 1.25-1.25 1.25z"/>
+                        </svg>
+                        <h3 class="font-display font-bold text-gray-900">Android</h3>
+                    </div>
+                    <ol class="space-y-3">
+                        <li class="flex items-start gap-3">
+                            <span class="step-num">1</span>
+                            <span class="text-sm text-gray-600 pt-0.5">Open either link above in <strong class="text-gray-800">Chrome</strong></span>
+                        </li>
+                        <li class="flex items-start gap-3">
+                            <span class="step-num">2</span>
+                            <span class="text-sm text-gray-600 pt-0.5">Tap the <strong class="text-gray-800">three-dot menu</strong> in the top right corner</span>
+                        </li>
+                        <li class="flex items-start gap-3">
+                            <span class="step-num">3</span>
+                            <span class="text-sm text-gray-600 pt-0.5">Tap <strong class="text-gray-800">"Add to Home Screen"</strong> or <strong class="text-gray-800">"Install App"</strong></span>
+                        </li>
+                        <li class="flex items-start gap-3">
+                            <span class="step-num">4</span>
+                            <span class="text-sm text-gray-600 pt-0.5">Tap <strong class="text-gray-800">Install</strong>. The app icon will appear on your home screen.</span>
+                        </li>
+                    </ol>
+                </div>
+
+            </div>
+
+            <p class="mt-4 text-sm text-gray-400">
+                Camera permission will be requested the first time you open the app. Tap Allow.
+            </p>
+        </section>
+
+        <!-- How to use -->
+        <section>
+            <h2 class="font-display font-bold text-2xl text-gray-900 mb-2">How to use</h2>
+            <p class="text-gray-500 text-sm mb-5">Once open, the kiosk is listening for QR codes immediately. Hold a QR code in front of the camera — it works with images on screen too.</p>
+            <div class="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm space-y-4">
+                <div class="flex items-start gap-4">
+                    <div class="step-num">1</div>
+                    <div>
+                        <p class="font-display font-semibold text-gray-800">Scan container QR codes</p>
+                        <p class="text-sm text-gray-500 mt-0.5">Hold one of the cup QR codes below up to the camera. Each successful scan adds a container to the count. You can scan multiple different cups.</p>
+                    </div>
+                </div>
+                <div class="flex items-start gap-4">
+                    <div class="step-num">2</div>
+                    <div>
+                        <p class="font-display font-semibold text-gray-800">Scan the user QR code to check out</p>
+                        <p class="text-sm text-gray-500 mt-0.5">After scanning at least one cup, hold the user QR code up to the camera. This completes the checkout and shows the success screen.</p>
+                    </div>
+                </div>
+                <div class="flex items-start gap-4">
+                    <div class="step-num">3</div>
+                    <div>
+                        <p class="font-display font-semibold text-gray-800">Session resets automatically</p>
+                        <p class="text-sm text-gray-500 mt-0.5">The app resets after checkout, or times out after 30 seconds of inactivity. You can also tap Cancel at the bottom of the screen.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- QR codes -->
+        <section>
+            <h2 class="font-display font-bold text-2xl text-gray-900 mb-2">Test QR codes</h2>
+            <p class="text-gray-500 text-sm mb-6">
+                Save these to your camera roll, or open this page on one device and scan from another.
+                You can scan all three cup codes in a single session before checking out.
+            </p>
+
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                <div class="qr-card rounded-2xl border border-gray-200 bg-white p-4 shadow-sm flex flex-col items-center gap-3">
+                    <img src="qr-codes/cup-id-21788.png" alt="Cup QR code — ID 21788" class="w-full rounded-lg">
+                    <div class="text-center">
+                        <p class="font-display font-bold text-sm text-gray-800">Cup #21788</p>
+                        <p class="text-xs text-gray-400 mt-0.5">Container</p>
+                    </div>
+                </div>
+                <div class="qr-card rounded-2xl border border-gray-200 bg-white p-4 shadow-sm flex flex-col items-center gap-3">
+                    <img src="qr-codes/cup-id-21789.png" alt="Cup QR code — ID 21789" class="w-full rounded-lg">
+                    <div class="text-center">
+                        <p class="font-display font-bold text-sm text-gray-800">Cup #21789</p>
+                        <p class="text-xs text-gray-400 mt-0.5">Container</p>
+                    </div>
+                </div>
+                <div class="qr-card rounded-2xl border border-gray-200 bg-white p-4 shadow-sm flex flex-col items-center gap-3">
+                    <img src="qr-codes/cup-id-91282.png" alt="Cup QR code — ID 91282" class="w-full rounded-lg">
+                    <div class="text-center">
+                        <p class="font-display font-bold text-sm text-gray-800">Cup #91282</p>
+                        <p class="text-xs text-gray-400 mt-0.5">Container</p>
+                    </div>
+                </div>
+                <div class="qr-card rounded-2xl border border-teal/30 bg-white p-4 shadow-sm flex flex-col items-center gap-3" style="border-color: #008C9555;">
+                    <img src="qr-codes/user-24638.png" alt="User QR code — ID 24638" class="w-full rounded-lg">
+                    <div class="text-center">
+                        <p class="font-display font-bold text-sm" style="color: #008C95;">User #24638</p>
+                        <p class="text-xs text-gray-400 mt-0.5">Scan last to check out</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Notes -->
+        <section class="rounded-2xl border border-amber-100 bg-amber-50 p-6">
+            <h3 class="font-display font-semibold text-amber-800 mb-2">A few notes</h3>
+            <ul class="space-y-1.5 text-sm text-amber-700">
+                <li>— This is a prototype. Scanning works, but no data is saved or sent anywhere.</li>
+                <li>— Best tested on a tablet in landscape mode, as it would be deployed on the kiosk arm.</li>
+                <li>— Portrait mode is supported but secondary — primarily for testing on phones.</li>
+                <li>— Each cup code can only be scanned once per session (by design). To scan again, cancel and restart.</li>
+            </ul>
+        </section>
+
+    </main>
+
+    <footer style="border-top: 1px solid #e5e7eb;" class="mt-8 py-8">
+        <div class="max-w-4xl mx-auto px-6 text-sm text-gray-400 font-body">
+            USEFULL Checkout Kiosk &mdash; Stakeholder review build &mdash; March 2026
+        </div>
+    </footer>
+
+</body>
+</html>
