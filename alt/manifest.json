@@ -1,0 +1,19 @@
+{
+  "name": "USEFULL Checkout Kiosk (Alt)",
+  "short_name": "USEFULL Alt",
+  "description": "Scan and check out reusable containers",
+  "start_url": "/checkout-rework/alt/",
+  "scope": "/checkout-rework/alt/",
+  "display": "standalone",
+  "orientation": "landscape",
+  "theme_color": "#ffffff",
+  "background_color": "#f0f4f5",
+  "icons": [
+    {
+      "src": "../USEFULL-Icon-Registered_Color.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
