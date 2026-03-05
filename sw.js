@@ -1,12 +1,12 @@
 const CACHE_NAME = 'usefull-kiosk-v1';
 const ASSETS = [
-    '/',
-    '/index.html',
-    '/USEFULL-Icon-Registered_Color.svg',
-    '/USEFULL-Logo-Registered_KnockOut.svg',
-    '/Pioneer State University.png',
-    '/app-download.png',
-    '/manifest.json',
+    '/checkout-rework/',
+    '/checkout-rework/index.html',
+    '/checkout-rework/USEFULL-Icon-Registered_Color.svg',
+    '/checkout-rework/USEFULL-Logo-Registered_KnockOut.svg',
+    '/checkout-rework/Pioneer State University.png',
+    '/checkout-rework/app-download.png',
+    '/checkout-rework/manifest.json',
 ];
 
 // Cache assets on install
