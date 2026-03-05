@@ -24,6 +24,7 @@
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
 
     <script>
         tailwind.config = {
@@ -316,8 +317,11 @@
         // ============================================================
         // CAMERA VIEW (live feed via getUserMedia)
         // ============================================================
-        const CameraView = ({ children }) => {
-            const videoRef = useRef(null);
+        const CameraView = ({ children, onQRResult, isScanning }) => {
+            const videoRef      = useRef(null);
+            const containerRef  = useRef(null);
+            const canvasRef     = useRef(document.createElement('canvas'));
+            const lastSeenRef   = useRef(null); // persists across effect re-runs
             const [cameraReady, setCameraReady] = useState(false);
 
             useEffect(() => {
@@ -341,8 +345,63 @@
                 };
             }, []);
 
+            // QR scan loop — crops to reticle area before decoding
+            useEffect(() => {
+                if (!isScanning || !onQRResult) return;
+                const canvas = canvasRef.current;
+                const ctx = canvas.getContext('2d', { willReadFrequently: true });
+
+                const scan = () => {
+                    const video     = videoRef.current;
+                    const container = containerRef.current;
+                    if (!video || !container || video.readyState < 2) return;
+
+                    const cW = container.offsetWidth;
+                    const cH = container.offsetHeight;
+                    const vW = video.videoWidth;
+                    const vH = video.videoHeight;
+                    if (!vW || !vH) return;
+
+                    // Compute object-cover transform (scale + centering offsets)
+                    const scale   = Math.max(cW / vW, cH / vH);
+                    const offsetX = (cW - vW * scale) / 2;
+                    const offsetY = (cH - vH * scale) / 2;
+
+                    // Reticle region in display coords: 44% container width, 4:3 aspect, centered
+                    const rW = cW * 0.44;
+                    const rH = rW * (3 / 4);
+                    const rX = (cW - rW) / 2;
+                    const rY = (cH - rH) / 2;
+
+                    // Map display coords -> raw video pixel coords
+                    // display = video * scale + offset  =>  video = (display - offset) / scale
+                    const cropX = Math.max(0, (rX - offsetX) / scale);
+                    const cropY = Math.max(0, (rY - offsetY) / scale);
+                    const cropW = Math.min(rW / scale, vW - cropX);
+                    const cropH = Math.min(rH / scale, vH - cropY);
+
+                    canvas.width  = Math.round(cropW);
+                    canvas.height = Math.round(cropH);
+                    ctx.drawImage(video, cropX, cropY, cropW, cropH, 0, 0, canvas.width, canvas.height);
+
+                    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                    const result    = jsQR(imageData.data, canvas.width, canvas.height);
+
+                    if (result) {
+                        let decoded = result.data;
+                        try { decoded = atob(result.data); } catch (_) {}
+                        if (decoded === lastSeenRef.current) return;
+                        lastSeenRef.current = decoded;
+                        onQRResult(decoded);
+                    }
+                };
+
+                const interval = setInterval(scan, 200);
+                return () => clearInterval(interval);
+            }, [isScanning, onQRResult]);
+
             return (
-                <div className="flex-1 relative overflow-hidden" style={{ backgroundColor: '#111' }}>
+                <div ref={containerRef} className="flex-1 relative overflow-hidden" style={{ backgroundColor: '#111' }}>
                     {/* Live video feed */}
                     <video
                         ref={videoRef}
@@ -810,6 +869,7 @@
             const [successData, setSuccessData] = useState(null);
             const [justScanned, setJustScanned] = useState(false);
             const [showDownloadModal, setShowDownloadModal] = useState(false);
+            const scannedCodesRef = useRef(new Set()); // session-level hard dedup
 
             // Derived state
             const hasItems = items.length > 0;
@@ -838,6 +898,7 @@
                 setSuccessData(null);
                 setTimeLeft(TIMING.timeoutDuration);
                 setJustScanned(false);
+                scannedCodesRef.current.clear();
             }, []);
 
             const handleScanContainer = useCallback(() => {
@@ -866,6 +927,19 @@
                 setTimeout(() => handleCancel(), TIMING.successDisplayMs);
             }, [items.length, handleCancel]);
 
+            const handleQRResult = useCallback((decoded) => {
+                if (scannedCodesRef.current.has(decoded)) return;
+                scannedCodesRef.current.add(decoded);
+                if (decoded.startsWith('cup')) {
+                    handleScanContainer();
+                } else if (decoded.startsWith('user')) {
+                    handleScanUser();
+                } else {
+                    setError('Unrecognized QR code');
+                    setTimeout(() => setError(null), TIMING.errorDisplayMs);
+                }
+            }, [handleScanContainer, handleScanUser]);
+
             return (
                 <div className="h-full w-full flex flex-col overflow-hidden select-none relative">
                     {/* Shell: teal header with step indicators */}
@@ -875,7 +949,7 @@
                     <TimeoutBar timeLeft={timeLeft} isVisible={showTimeout} />
 
                     {/* Content: full-bleed camera feed */}
-                    <CameraView>
+                    <CameraView isScanning={status !== 'success'} onQRResult={handleQRResult}>
                         <Reticle isScanning={status !== 'success'} />
                         <InstructionOverlay hasItems={hasItems} />
                         <CountCard count={items.length} justScanned={justScanned} isVisible={hasItems && status !== 'success'} />

@@ -24,6 +24,7 @@
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
 
     <script>
         tailwind.config = {
@@ -200,8 +201,11 @@
         // ============================================================
         // CAMERA BOX (live feed in a bounded, rounded box)
         // ============================================================
-        const CameraBox = ({ isScanning }) => {
-            const videoRef = useRef(null);
+        const CameraBox = ({ isScanning, onQRResult }) => {
+            const videoRef     = useRef(null);
+            const containerRef = useRef(null);
+            const canvasRef    = useRef(document.createElement('canvas'));
+            const lastSeenRef  = useRef(null); // persists across effect re-runs
             const [cameraReady, setCameraReady] = useState(false);
 
             useEffect(() => {
@@ -223,8 +227,57 @@
                 return () => { if (stream) stream.getTracks().forEach(t => t.stop()); };
             }, []);
 
+            // QR scan loop — crops to the full visible area of the camera box
+            useEffect(() => {
+                if (!isScanning || !onQRResult) return;
+                const canvas = canvasRef.current;
+                const ctx = canvas.getContext('2d', { willReadFrequently: true });
+
+                const scan = () => {
+                    const video     = videoRef.current;
+                    const container = containerRef.current;
+                    if (!video || !container || video.readyState < 2) return;
+
+                    const cW = container.offsetWidth;
+                    const cH = container.offsetHeight;
+                    const vW = video.videoWidth;
+                    const vH = video.videoHeight;
+                    if (!vW || !vH) return;
+
+                    // Compute object-cover transform (scale + centering offsets)
+                    const scale   = Math.max(cW / vW, cH / vH);
+                    const offsetX = (cW - vW * scale) / 2;
+                    const offsetY = (cH - vH * scale) / 2;
+
+                    // Crop to the full visible area of the box
+                    const cropX = Math.max(0, -offsetX / scale);
+                    const cropY = Math.max(0, -offsetY / scale);
+                    const cropW = Math.min(cW / scale, vW - cropX);
+                    const cropH = Math.min(cH / scale, vH - cropY);
+
+                    canvas.width  = Math.round(cropW);
+                    canvas.height = Math.round(cropH);
+                    ctx.drawImage(video, cropX, cropY, cropW, cropH, 0, 0, canvas.width, canvas.height);
+
+                    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                    const result    = jsQR(imageData.data, canvas.width, canvas.height);
+
+                    if (result) {
+                        let decoded = result.data;
+                        try { decoded = atob(result.data); } catch (_) {}
+                        if (decoded === lastSeenRef.current) return;
+                        lastSeenRef.current = decoded;
+                        onQRResult(decoded);
+                    }
+                };
+
+                const interval = setInterval(scan, 200);
+                return () => clearInterval(interval);
+            }, [isScanning, onQRResult]);
+
             return (
                 <div
+                    ref={containerRef}
                     className="w-full h-full relative rounded-2xl overflow-hidden shadow-xl"
                     style={{ backgroundColor: '#111' }}
                 >
@@ -496,6 +549,7 @@
             const [successData, setSuccessData]             = useState(null);
             const [justScanned, setJustScanned]             = useState(false);
             const [showDownloadModal, setShowDownloadModal] = useState(false);
+            const scannedCodesRef = useRef(new Set()); // session-level hard dedup
             const [isPortrait, setIsPortrait]               = useState(() => window.innerHeight > window.innerWidth);
 
             const hasItems    = items.length > 0;
@@ -523,6 +577,7 @@
             const handleCancel = useCallback(() => {
                 setItems([]); setStatus('idle'); setError(null);
                 setSuccessData(null); setTimeLeft(30); setJustScanned(false);
+                scannedCodesRef.current.clear();
             }, []);
 
             const handleScanContainer = useCallback(() => {
@@ -551,6 +606,19 @@
                 setTimeout(() => handleCancel(), 4000);
             }, [items.length, handleCancel]);
 
+            const handleQRResult = useCallback((decoded) => {
+                if (scannedCodesRef.current.has(decoded)) return;
+                scannedCodesRef.current.add(decoded);
+                if (decoded.startsWith('cup')) {
+                    handleScanContainer();
+                } else if (decoded.startsWith('user')) {
+                    handleScanUser();
+                } else {
+                    setError('Unrecognized QR code');
+                    setTimeout(() => setError(null), 4000);
+                }
+            }, [handleScanContainer, handleScanUser]);
+
             return (
                 <div className="h-full w-full flex flex-col overflow-hidden select-none relative" style={{ backgroundColor: '#EEF2F3' }}>
 
@@ -561,7 +629,7 @@
                         <>
                             {/* PORTRAIT: full-bleed camera with overlays */}
                             <div className="flex-1 relative overflow-hidden">
-                                <CameraBox isScanning={status !== 'success'} />
+                                <CameraBox isScanning={status !== 'success'} onQRResult={handleQRResult} />
 
                                 {/* Instruction overlay — top center */}
                                 <div className="absolute top-5 left-0 right-0 flex justify-center pointer-events-none" style={{ animation: 'fadeIn 0.4s ease-out' }}>
@@ -637,7 +705,7 @@
 
                             {/* LEFT: Large camera box — square, anchored near left edge */}
                             <div className="relative shrink-0" style={{ aspectRatio: '1/1', height: '100%' }}>
-                                <CameraBox isScanning={status !== 'success'} />
+                                <CameraBox isScanning={status !== 'success'} onQRResult={handleQRResult} />
                                 <ErrorToast message={error} />
                             </div>
 
