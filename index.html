@@ -135,10 +135,9 @@
         };
 
         const LAYOUT = {
-            headerHeight:   72,
-            stepStripHeight: 48,
-            footerHeight:    56,
-            timeoutBarHeight: 6,
+            headerHeight:   96,
+            footerHeight:    68,
+            timeoutBarHeight: 8,
         };
 
 
@@ -189,21 +188,62 @@
 
 
         // ============================================================
-        // HEADER
+        // HEADER (includes step indicator)
         // ============================================================
-        const Header = () => (
-            <div
-                className="w-full flex items-center justify-between px-8 shrink-0"
-                style={{ height: LAYOUT.headerHeight, backgroundColor: COLORS.teal }}
-            >
-                <UsefullLogo className="h-9 w-auto" />
-                <img
-                    src="Pioneer State University.png"
-                    alt="Pioneer State University"
-                    className="h-10 w-auto opacity-90"
-                />
-            </div>
-        );
+        const Header = ({ currentStep }) => {
+            const steps = [
+                { num: 1, label: 'SCAN ITEMS' },
+                { num: 2, label: 'SCAN USER' },
+            ];
+            return (
+                <div
+                    className="w-full flex items-center justify-between px-8 shrink-0"
+                    style={{ height: LAYOUT.headerHeight, backgroundColor: COLORS.teal }}
+                >
+                    <UsefullLogo className="h-14 w-auto" />
+
+                    {/* Step indicator — center */}
+                    <div className="flex items-center gap-4">
+                        {steps.map((step, i) => {
+                            const isActive = step.num <= currentStep;
+                            const isCurrent = step.num === currentStep;
+                            return (
+                                <React.Fragment key={step.num}>
+                                    {i > 0 && (
+                                        <div className="w-10 h-[2px] rounded-full" style={{ backgroundColor: currentStep >= 2 ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.2)' }} />
+                                    )}
+                                    <div className="flex items-center gap-2.5">
+                                        <div
+                                            className="w-9 h-9 rounded-full flex items-center justify-center text-base font-bold font-display"
+                                            style={{
+                                                backgroundColor: isActive ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.08)',
+                                                color: isActive ? '#fff' : 'rgba(255,255,255,0.35)',
+                                                border: isActive ? '2px solid rgba(255,255,255,0.55)' : '2px solid rgba(255,255,255,0.15)',
+                                                boxShadow: isCurrent ? '0 0 0 3px rgba(255,255,255,0.25)' : 'none',
+                                            }}
+                                        >
+                                            {step.num}
+                                        </div>
+                                        <span
+                                            className="text-sm font-bold font-display tracking-widest uppercase"
+                                            style={{ color: isActive ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.3)' }}
+                                        >
+                                            {step.label}
+                                        </span>
+                                    </div>
+                                </React.Fragment>
+                            );
+                        })}
+                    </div>
+
+                    <img
+                        src="Pioneer State University.png"
+                        alt="Pioneer State University"
+                        className="h-14 w-auto opacity-90"
+                    />
+                </div>
+            );
+        };
 
 
         // ============================================================
@@ -348,7 +388,7 @@
         // ============================================================
         const Reticle = ({ isScanning }) => (
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                <div className="relative" style={{ width: '55%', aspectRatio: '4/3' }}>
+                <div className="relative" style={{ width: '44%', aspectRatio: '4/3' }}>
                     {/* Corner brackets */}
                     <div className="reticle-corner reticle-corner--tl" style={{ top: 0, left: 0 }} />
                     <div className="reticle-corner reticle-corner--tr" style={{ top: 0, right: 0 }} />
@@ -372,11 +412,11 @@
         // ============================================================
         const InstructionOverlay = ({ hasItems }) => (
             <div className="absolute top-6 left-0 right-0 flex flex-col items-center pointer-events-none" style={{ animation: 'fadeIn 0.4s ease-out' }}>
-                <div className="px-7 py-3 rounded-2xl" style={{ backgroundColor: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)' }}>
-                    <h2 className="text-white font-display font-extrabold text-2xl text-center leading-tight">
+                <div className="px-10 py-4 rounded-2xl" style={{ backgroundColor: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)' }}>
+                    <h2 className="text-white font-display font-extrabold text-4xl text-center leading-tight">
                         {hasItems ? 'Scan more containers' : 'Scan your containers'}
                     </h2>
-                    <p className="text-white/70 font-body text-sm text-center mt-1">
+                    <p className="text-white/70 font-body text-xl text-center mt-1.5">
                         {hasItems ? 'Or scan your QR code to finish' : 'Hold each container in front of the camera'}
                     </p>
                 </div>
@@ -392,18 +432,18 @@
 
             return (
                 <div
-                    className="absolute right-6 top-1/2 -translate-y-1/2 w-52 pointer-events-none"
+                    className="absolute right-6 top-1/2 -translate-y-1/2 w-64 pointer-events-none"
                     style={{ animation: 'slideInRight 0.4s cubic-bezier(0.16, 1, 0.3, 1)' }}
                 >
                     <div
-                        className="rounded-2xl p-6 flex flex-col items-center border border-white/20 shadow-2xl"
+                        className="rounded-2xl p-7 flex flex-col items-center border border-white/20 shadow-2xl"
                         style={{
-                            backgroundColor: 'rgba(0,0,0,0.5)',
+                            backgroundColor: 'rgba(0,0,0,0.55)',
                             backdropFilter: 'blur(20px)',
                             WebkitBackdropFilter: 'blur(20px)',
                         }}
                     >
-                        <span className="font-display text-[10px] font-bold uppercase tracking-[0.2em] text-white/50 mb-2">
+                        <span className="font-display text-sm font-bold uppercase tracking-[0.18em] text-white/55 mb-2">
                             Ready for Checkout
                         </span>
 
@@ -412,26 +452,26 @@
                             style={{ animation: justScanned ? 'countPop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1)' : 'none' }}
                             key={count}
                         >
-                            <span className="font-display text-7xl font-extrabold text-white leading-none">
+                            <span className="font-display text-8xl font-extrabold text-white leading-none">
                                 {count}
                             </span>
                         </div>
 
-                        <span className="font-body text-xs font-semibold uppercase tracking-wider text-white/40 mt-1">
+                        <span className="font-body text-base font-semibold uppercase tracking-wider text-white/45 mt-2">
                             Container{count !== 1 ? 's' : ''}
                         </span>
 
                         {/* "Added" feedback chip */}
                         <div
-                            className="mt-4 transition-all duration-300"
+                            className="mt-5 transition-all duration-300"
                             style={{ opacity: justScanned ? 1 : 0, transform: justScanned ? 'translateY(0)' : 'translateY(6px)' }}
                         >
                             <div
-                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full"
+                                className="flex items-center gap-2 px-4 py-2 rounded-full"
                                 style={{ backgroundColor: `${COLORS.teal}33`, border: `1px solid ${COLORS.teal}55` }}
                             >
-                                <IconCheck className="w-3 h-3 text-emerald-300" style={{ strokeDasharray: 24, animation: justScanned ? 'checkDraw 0.3s ease-out forwards' : 'none' }} />
-                                <span className="text-[10px] font-display font-bold uppercase tracking-wider text-emerald-300">Added</span>
+                                <IconCheck className="w-4 h-4 text-emerald-300" style={{ strokeDasharray: 24, animation: justScanned ? 'checkDraw 0.3s ease-out forwards' : 'none' }} />
+                                <span className="text-sm font-display font-bold uppercase tracking-wider text-emerald-300">Added</span>
                             </div>
                         </div>
                     </div>
@@ -454,8 +494,8 @@
                         className="flex items-start gap-3 px-5 py-4 rounded-xl shadow-2xl max-w-sm border border-red-500/30"
                         style={{ backgroundColor: 'rgba(153, 27, 27, 0.9)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)' }}
                     >
-                        <IconAlert className="w-5 h-5 text-red-200 shrink-0 mt-0.5" />
-                        <p className="text-white font-body text-sm font-medium leading-snug">{message}</p>
+                        <IconAlert className="w-6 h-6 text-red-200 shrink-0 mt-0.5" />
+                        <p className="text-white font-body text-lg font-medium leading-snug">{message}</p>
                     </div>
                 </div>
             );
@@ -659,14 +699,14 @@
                 {/* Left: app download icon + text */}
                 <button
                     onClick={onOpenDownload}
-                    className="flex items-center gap-2.5 p-2 rounded-lg hover:bg-white/10 transition-colors group"
+                    className="flex items-center gap-3 p-2 rounded-lg hover:bg-white/10 transition-colors group"
                 >
                     <img
                         src="app-download.png"
                         alt="Download app"
-                        className="w-7 h-7 opacity-80 group-hover:opacity-100 transition-opacity"
+                        className="w-9 h-9 opacity-80 group-hover:opacity-100 transition-opacity"
                     />
-                    <span className="font-body text-sm text-white/70 group-hover:text-white/90 tracking-wide transition-colors">
+                    <span className="font-body text-base text-white/70 group-hover:text-white/90 tracking-wide transition-colors">
                         Download the USEFULL app for iOS or Android and create an account to get started!
                     </span>
                 </button>
@@ -676,9 +716,9 @@
                     {hasItems ? (
                         <button
                             onClick={onCancel}
-                            className="flex items-center gap-1.5 px-4 py-2 rounded-lg border border-white/25 text-white/80 hover:bg-white/10 hover:text-white transition-all font-display text-xs font-bold uppercase tracking-wider"
+                            className="flex items-center gap-2 px-5 py-2.5 rounded-lg border border-white/25 text-white/80 hover:bg-white/10 hover:text-white transition-all font-display text-sm font-bold uppercase tracking-wider"
                         >
-                            <IconX className="w-3.5 h-3.5" />
+                            <IconX className="w-4 h-4" />
                             Cancel
                         </button>
                     ) : (
@@ -834,13 +874,10 @@
 
             return (
                 <div className="h-full w-full flex flex-col overflow-hidden select-none relative">
-                    {/* Shell: teal header */}
-                    <Header />
+                    {/* Shell: teal header with step indicators */}
+                    <Header currentStep={currentStep} />
 
-                    {/* Shell: step indicators on white strip */}
-                    <StepStrip currentStep={currentStep} />
-
-                    {/* Timeout bar (below step strip) */}
+                    {/* Timeout bar (below header) */}
                     <TimeoutBar timeLeft={timeLeft} isVisible={showTimeout} />
 
                     {/* Content: full-bleed camera feed */}
