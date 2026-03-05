@@ -793,29 +793,29 @@
                     style={{ backgroundColor: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)', animation: 'fadeIn 0.2s ease-out' }}
                 >
                     <div
-                        className="bg-white rounded-3xl shadow-2xl max-w-md w-full mx-6 overflow-hidden"
-                        style={{ animation: 'scaleUp 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)' }}
+                        className="bg-white rounded-3xl shadow-2xl w-full mx-6 overflow-hidden"
+                        style={{ animation: 'scaleUp 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)', maxWidth: '36.4rem' }}
                     >
-                        <div className="p-8 text-center" style={{ backgroundColor: COLORS.teal }}>
+                        <div className="p-10 text-center" style={{ backgroundColor: COLORS.teal }}>
                             {/* Checkmark circle */}
                             <div
-                                className="w-24 h-24 bg-white rounded-full flex items-center justify-center mx-auto mb-6 shadow-xl"
+                                className="w-32 h-32 bg-white rounded-full flex items-center justify-center mx-auto mb-8 shadow-xl"
                                 style={{ animation: 'pulseGlow 2s ease-in-out infinite' }}
                             >
-                                <IconCheck className="w-12 h-12" style={{ color: COLORS.teal }} />
+                                <IconCheck className="w-16 h-16" style={{ color: COLORS.teal }} />
                             </div>
 
-                            <h2 className="text-white font-display text-3xl font-extrabold mb-2">
+                            <h2 className="text-white font-display text-4xl font-extrabold mb-3">
                                 Checkout Complete!
                             </h2>
-                            <p className="text-white/80 font-body text-lg mb-8 leading-relaxed">
-                                <span className="font-bold text-white text-2xl">{data.count}</span> container{data.count > 1 ? 's' : ''} checked out to<br/>
-                                <span className="font-bold text-white text-xl border-b-2 border-white/30 pb-0.5">{data.user}</span>
+                            <p className="text-white/80 font-body text-xl mb-10 leading-relaxed">
+                                <span className="font-bold text-white text-3xl">{data.count}</span> container{data.count > 1 ? 's' : ''} checked out to<br/>
+                                <span className="font-bold text-white text-2xl border-b-2 border-white/30 pb-0.5">{data.user}</span>
                             </p>
 
                             <button
                                 onClick={onDone}
-                                className="w-full py-4 rounded-xl font-display font-bold text-lg uppercase tracking-wider shadow-lg transition-colors bg-white hover:bg-gray-50"
+                                className="w-full py-5 rounded-xl font-display font-bold text-xl uppercase tracking-wider shadow-lg transition-colors bg-white hover:bg-gray-50"
                                 style={{ color: COLORS.teal }}
                             >
                                 Done
@@ -870,6 +870,12 @@
             const [justScanned, setJustScanned] = useState(false);
             const [showDownloadModal, setShowDownloadModal] = useState(false);
             const scannedCodesRef = useRef(new Set()); // session-level hard dedup
+            const dingRef = useRef(null);
+            const playDing = useCallback(() => {
+                if (!dingRef.current) dingRef.current = new Audio('success-ding.m4a');
+                dingRef.current.currentTime = 0;
+                dingRef.current.play().catch(() => {});
+            }, []);
 
             // Derived state
             const hasItems = items.length > 0;
@@ -902,6 +908,7 @@
             }, []);
 
             const handleScanContainer = useCallback(() => {
+                playDing();
                 setTimeLeft(TIMING.timeoutDuration);
                 setItems(prev => [...prev, { id: Date.now() }]);
                 setStatus('scanning');
@@ -922,6 +929,7 @@
                     setTimeout(() => setError(null), 3000);
                     return;
                 }
+                playDing();
                 setSuccessData({ user: "Owen", count: items.length });
                 setStatus('success');
                 setTimeout(() => handleCancel(), TIMING.successDisplayMs);
