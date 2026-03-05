@@ -404,11 +404,32 @@
             const [justScanned, setJustScanned]             = useState(false);
             const [showDownloadModal, setShowDownloadModal] = useState(false);
             const scannedCodesRef = useRef(new Set());
-            const dingRef = useRef(null);
+            const audioCtxRef = useRef(null);
+            const dingBufferRef = useRef(null);
+            useEffect(() => {
+                const unlock = async () => {
+                    if (audioCtxRef.current) return;
+                    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                    audioCtxRef.current = ctx;
+                    try {
+                        const res = await fetch('../success-ding.m4a');
+                        const buf = await res.arrayBuffer();
+                        dingBufferRef.current = await ctx.decodeAudioData(buf);
+                    } catch (_) {}
+                };
+                document.addEventListener('touchstart', unlock, { once: true });
+                document.addEventListener('click', unlock, { once: true });
+                return () => {
+                    document.removeEventListener('touchstart', unlock);
+                    document.removeEventListener('click', unlock);
+                };
+            }, []);
             const playDing = useCallback(() => {
-                if (!dingRef.current) dingRef.current = new Audio('../success-ding.m4a');
-                dingRef.current.currentTime = 0;
-                dingRef.current.play().catch(() => {});
+                if (!audioCtxRef.current || !dingBufferRef.current) return;
+                const source = audioCtxRef.current.createBufferSource();
+                source.buffer = dingBufferRef.current;
+                source.connect(audioCtxRef.current.destination);
+                source.start(0);
             }, []);
 
             const hasItems    = items.length > 0;
