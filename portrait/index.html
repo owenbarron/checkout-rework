@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>USEFULL Checkout — Portrait</title>
+
+    <!-- PWA -->
+    <link rel="manifest" href="../fullheight/manifest.json">
+    <meta name="theme-color" content="#ffffff">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="USEFULL">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- React -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        display: ['"Plus Jakarta Sans"', 'system-ui', 'sans-serif'],
+                        body: ['"DM Sans"', 'system-ui', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        * { box-sizing: border-box; }
+        html, body, #root { height: 100%; width: 100%; margin: 0; padding: 0; overflow: hidden; }
+        body { font-family: 'DM Sans', sans-serif; background: #EEF2F3; }
+
+        @keyframes fadeIn       { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes scaleUp      { from { opacity: 0; transform: scale(0.92); } to { opacity: 1; transform: scale(1); } }
+        @keyframes slideUp      { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes countPop     { 0% { transform: scale(1); } 40% { transform: scale(1.18); } 100% { transform: scale(1); } }
+        @keyframes checkDraw    { from { stroke-dashoffset: 24; } to { stroke-dashoffset: 0; } }
+        @keyframes pulseGlow    { 0%, 100% { box-shadow: 0 0 0 0 rgba(0,140,149,0.3); } 50% { box-shadow: 0 0 0 16px rgba(0,140,149,0); } }
+        @keyframes scanLine {
+            0%   { top: 6%; opacity: 0; }
+            5%   { opacity: 1; }
+            95%  { opacity: 1; }
+            100% { top: 94%; opacity: 0; }
+        }
+        .scan-line { animation: scanLine 2.2s ease-in-out infinite; }
+
+        /* Divider between camera and content */
+        .camera-content-divider {
+            height: 3px;
+            background: linear-gradient(90deg, transparent, rgba(0,140,149,0.15), rgba(0,140,149,0.3), rgba(0,140,149,0.15), transparent);
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef, useCallback } = React;
+
+        // ============================================================
+        // CONSTANTS
+        // ============================================================
+        const TEAL       = '#008C95';
+        const TEAL_LIGHT = '#E6F4F5';
+
+        // ============================================================
+        // ICONS
+        // ============================================================
+        const IconX = ({ className }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+        );
+        const IconCheck = ({ className, style }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className={className} style={style}>
+                <path d="M20 6 9 17l-5-5"/>
+            </svg>
+        );
+        const IconAlert = ({ className }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                <circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/>
+            </svg>
+        );
+        const IconDownload = () => (
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 20, height: 20 }}>
+                <path d="M12 2v13M7 11l5 5 5-5M2 19h20"/>
+            </svg>
+        );
+
+        // ============================================================
+        // USEFULL U ICON
+        // ============================================================
+        const UsefullIcon = ({ style, className }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 288 288" style={style} className={className}>
+                <path fill="#d5992c" d="M75.92,154.15h0c.05,37.4,30.38,67.71,67.79,67.71s67.74-30.31,67.79-67.71h0v-7.87H75.92v7.87Z"/>
+                <path fill="#008c95" d="M228.42,103.26v26.11h0v24.81c-.06,46.65-38.06,84.61-84.71,84.61s-84.66-37.96-84.71-84.63V78.25h0v-15.62s18.09,18.09,18.09,18.09l10.28-10.28L52.04,35.11,16.72,70.44l10.28,10.28,17.89-17.89v91.32c.07,54.45,44.4,98.74,98.82,98.74s98.75-44.28,98.82-98.7v-50.93h-14.11Z"/>
+                <path fill="#58595b" d="M252.75,103c4.09,0,7.41,3.32,7.41,7.41s-3.32,7.41-7.41,7.41-7.41-3.32-7.41-7.41,3.32-7.41,7.41-7.41Zm0,13.84c3.57,0,6.43-2.87,6.43-6.43s-2.87-6.43-6.43-6.43-6.43,2.87-6.43,6.43,2.87,6.43,6.43,6.43Zm2.2-3.02l-1.46-2.53h-2.47v2.53h-.92v-7.16h3.29c1.55,0,2.44,1.07,2.44,2.32,0,.95-.52,1.8-1.43,2.13l1.59,2.71h-1.04Zm-3.93-6.25v2.8h2.35c.98,0,1.55-.7,1.55-1.4s-.58-1.4-1.55-1.4h-2.35Z"/>
+            </svg>
+        );
+
+        // ============================================================
+        // USEFULL WORDMARK (full)
+        // ============================================================
+        const UsefullLogo = ({ className, style }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 144" className={className} style={style}>
+                <g>
+                    <path fill="#008c95" d="M88.85,83.9c0,11.31-7.44,18.34-19.4,18.34s-19.4-7.03-19.4-18.34V46.13h-6.49v37.92c0,14.94,10.16,24.6,25.89,24.6s25.89-9.66,25.89-24.6V46.13h-6.49v37.77Z"/>
+                    <path fill="#008c95" d="M141.57,73.67l-.29-.09c-10.6-3.34-17.04-5.84-17.04-12.37,0-6.19,5.89-10.04,15.37-10.04,10.06,0,16.82,4.22,16.82,10.5v1.38h6.41v-1.68c0-9.49-9.77-16.38-23.23-16.38s-22.09,6.64-22.09,16.53c0,11.6,12.64,15.48,21.87,18.31,10.7,3.24,17.72,5.87,17.72,12.6,0,6.19-6.12,10.04-15.98,10.04-10.56,0-17.65-4.22-17.65-10.5v-1.3h-6.41v1.61c0,9.64,9.9,16.38,24.07,16.38s22.77-6.46,22.77-16.45c0-11.74-12.91-15.66-22.34-18.53Z"/>
+                    <polygon fill="#008c95" points="186.25 107.51 229.05 107.51 229.05 101.1 192.74 101.1 192.74 80.48 223.65 80.48 223.65 74.22 192.74 74.22 192.74 52.54 229.05 52.54 229.05 46.13 186.25 46.13 186.25 107.51"/>
+                    <polygon fill="#008c95" points="252.78 106.51 267.93 106.51 267.93 86.18 292.21 86.18 292.21 72.4 267.93 72.4 267.93 61.9 296.86 61.9 296.86 47.13 252.78 47.13 252.78 106.51"/>
+                    <polygon fill="#008c95" points="438.58 47.13 423.43 47.13 423.43 106.51 467.05 106.51 467.05 91.82 438.58 91.82 438.58 47.13"/>
+                    <polygon fill="#008c95" points="503.97 91.82 503.97 47.13 488.82 47.13 488.82 106.51 532.45 106.51 532.45 91.82 503.97 91.82"/>
+                    <path fill="#d5992c" d="M332.04,67.58h0c.02,15.56,12.64,28.17,28.2,28.17s28.18-12.61,28.2-28.17h0v-3.27h-56.4v3.27Z"/>
+                    <path fill="#008c95" d="M395.47,46.41v10.86h0v10.32c-.02,19.41-15.83,35.2-35.24,35.2s-35.22-15.79-35.24-35.21v-31.58h0v-6.5s7.53,7.53,7.53,7.53l4.28-4.28-14.7-14.7-14.7,14.7,4.28,4.28,7.44-7.44v37.99c.03,22.65,18.47,41.07,41.11,41.07s41.08-18.42,41.11-41.06v-21.19h-5.87Z"/>
+                </g>
+                <path fill="#58595b" d="M538.09,42.25c4.09,0,7.41,3.32,7.41,7.41s-3.32,7.41-7.41,7.41-7.41-3.32-7.41-7.41,3.32-7.41,7.41-7.41Zm0,13.84c3.57,0,6.43-2.87,6.43-6.43s-2.87-6.43-6.43-6.43-6.43,2.87-6.43,6.43,2.87,6.43,6.43,6.43Zm2.2-3.02l-1.46-2.53h-2.47v2.53h-.92v-7.16h3.29c1.55,0,2.44,1.07,2.44,2.32,0,.95-.52,1.8-1.43,2.13l1.59,2.71h-1.04Zm-3.93-6.25v2.8h2.35c.98,0,1.55-.7,1.55-1.4s-.58-1.4-1.55-1.4h-2.35Z"/>
+            </svg>
+        );
+
+        // ============================================================
+        // CAMERA BOX — portrait, full-width top-half
+        // ============================================================
+        const CameraBox = ({ isScanning, onQRResult }) => {
+            const videoRef     = useRef(null);
+            const containerRef = useRef(null);
+            const canvasRef    = useRef(document.createElement('canvas'));
+            const lastSeenRef  = useRef(null);
+            const [cameraReady, setCameraReady] = useState(false);
+
+            useEffect(() => {
+                let stream = null;
+                const startCamera = async () => {
+                    try {
+                        stream = await navigator.mediaDevices.getUserMedia({
+                            video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 960 } }
+                        });
+                        if (videoRef.current) {
+                            videoRef.current.srcObject = stream;
+                            setCameraReady(true);
+                        }
+                    } catch (err) {
+                        console.warn('Camera not available:', err.message);
+                    }
+                };
+                startCamera();
+                return () => { if (stream) stream.getTracks().forEach(t => t.stop()); };
+            }, []);
+
+            useEffect(() => {
+                if (!isScanning || !onQRResult) return;
+                const canvas = canvasRef.current;
+                const ctx = canvas.getContext('2d', { willReadFrequently: true });
+
+                const scan = () => {
+                    const video     = videoRef.current;
+                    const container = containerRef.current;
+                    if (!video || !container || video.readyState < 2) return;
+
+                    const cW = container.offsetWidth;
+                    const cH = container.offsetHeight;
+                    const vW = video.videoWidth;
+                    const vH = video.videoHeight;
+                    if (!vW || !vH) return;
+
+                    const scale   = Math.max(cW / vW, cH / vH);
+                    const offsetX = (cW - vW * scale) / 2;
+                    const offsetY = (cH - vH * scale) / 2;
+
+                    const cropX = Math.max(0, -offsetX / scale);
+                    const cropY = Math.max(0, -offsetY / scale);
+                    const cropW = Math.min(cW / scale, vW - cropX);
+                    const cropH = Math.min(cH / scale, vH - cropY);
+
+                    canvas.width  = Math.round(cropW);
+                    canvas.height = Math.round(cropH);
+                    ctx.drawImage(video, cropX, cropY, cropW, cropH, 0, 0, canvas.width, canvas.height);
+
+                    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                    const result    = jsQR(imageData.data, canvas.width, canvas.height);
+
+                    if (result) {
+                        let decoded = result.data;
+                        try { decoded = atob(result.data); } catch (_) {}
+                        if (decoded === lastSeenRef.current) return;
+                        lastSeenRef.current = decoded;
+                        onQRResult(decoded);
+                    }
+                };
+
+                const interval = setInterval(scan, 200);
+                return () => clearInterval(interval);
+            }, [isScanning, onQRResult]);
+
+            // Corner bracket size
+            const B = 22; // bracket arm px
+
+            return (
+                <div
+                    ref={containerRef}
+                    className="w-full h-full relative overflow-hidden"
+                    style={{
+                        backgroundColor: '#111',
+                        borderRadius: '0 0 24px 24px',
+                    }}
+                >
+                    <video
+                        ref={videoRef}
+                        autoPlay playsInline muted
+                        className="absolute inset-0 w-full h-full object-cover"
+                        style={{ transform: 'scaleX(-1)' }}
+                    />
+
+                    {/* Dark gradient at bottom — blends into content section */}
+                    <div
+                        className="absolute bottom-0 left-0 right-0 pointer-events-none"
+                        style={{
+                            height: 60,
+                            background: 'linear-gradient(to bottom, transparent, rgba(0,0,0,0.18))',
+                        }}
+                    />
+
+                    {!cameraReady && (
+                        <div className="absolute inset-0 flex items-center justify-center">
+                            <div className="flex flex-col items-center gap-3 opacity-25">
+                                <svg viewBox="0 0 80 80" style={{ width: 64, height: 64 }}>
+                                    <rect x="4" y="4" width="72" height="72" rx="16" fill="none" stroke="white" strokeWidth="3" strokeDasharray="8 4" />
+                                    <circle cx="40" cy="38" r="14" fill="none" stroke="white" strokeWidth="3" />
+                                    <circle cx="40" cy="38" r="6" fill="white" opacity="0.5" />
+                                    <rect x="28" y="10" width="24" height="10" rx="5" fill="white" opacity="0.4" />
+                                </svg>
+                                <span style={{ color: 'rgba(255,255,255,0.4)', fontFamily: 'DM Sans', fontSize: 11, letterSpacing: '0.3em', textTransform: 'uppercase' }}>Camera Feed</span>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Outer corner brackets */}
+                    <div className="absolute pointer-events-none" style={{ top: 16, left: 16, width: B, height: B, borderTop: `4px solid ${TEAL}`, borderLeft: `4px solid ${TEAL}`, borderRadius: '5px 0 0 0' }} />
+                    <div className="absolute pointer-events-none" style={{ top: 16, right: 16, width: B, height: B, borderTop: `4px solid ${TEAL}`, borderRight: `4px solid ${TEAL}`, borderRadius: '0 5px 0 0' }} />
+                    <div className="absolute pointer-events-none" style={{ bottom: 16, left: 16, width: B, height: B, borderBottom: `4px solid ${TEAL}`, borderLeft: `4px solid ${TEAL}`, borderRadius: '0 0 0 5px' }} />
+                    <div className="absolute pointer-events-none" style={{ bottom: 16, right: 16, width: B, height: B, borderBottom: `4px solid ${TEAL}`, borderRight: `4px solid ${TEAL}`, borderRadius: '0 0 5px 0' }} />
+
+
+                    {/* Scan line — animates through full camera */}
+                    {isScanning && (
+                        <div
+                            className="scan-line absolute left-[6%] right-[6%] pointer-events-none"
+                            style={{ height: 2, backgroundColor: `${TEAL}BB` }}
+                        />
+                    )}
+                </div>
+            );
+        };
+
+        // ============================================================
+        // COUNT CARD — square, vertical layout
+        // ============================================================
+        const CountCard = ({ count, justScanned }) => (
+            <div
+                className="w-full h-full bg-white rounded-2xl border border-gray-100 shadow-lg flex flex-col items-center justify-center"
+                style={{
+                    animation: 'scaleUp 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
+                    padding: '20px 12px',
+                    gap: 2,
+                }}
+            >
+                <span
+                    className="font-display font-bold uppercase tracking-widest text-center"
+                    style={{ color: TEAL, fontSize: '1rem', letterSpacing: '0.12em' }}
+                >
+                    Ready for Checkout
+                </span>
+
+                <div
+                    style={{ animation: justScanned ? 'countPop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1)' : 'none' }}
+                    key={count}
+                >
+                    <span
+                        className="font-display font-black leading-none"
+                        style={{ fontSize: '7rem', color: TEAL, lineHeight: 1 }}
+                    >
+                        {count}
+                    </span>
+                </div>
+
+                <span className="font-body font-semibold text-gray-400 uppercase tracking-wider" style={{ fontSize: '1.4rem' }}>
+                    Container{count !== 1 ? 's' : ''}
+                </span>
+
+                <div
+                    style={{
+                        marginTop: 10,
+                        opacity: justScanned ? 1 : 0,
+                        transform: justScanned ? 'translateY(0)' : 'translateY(4px)',
+                        transition: 'all 0.3s ease',
+                    }}
+                >
+                    <div
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-full"
+                        style={{ backgroundColor: TEAL_LIGHT }}
+                    >
+                        <IconCheck
+                            style={{
+                                color: TEAL,
+                                width: 15, height: 15,
+                                strokeDasharray: 24,
+                                animation: justScanned ? 'checkDraw 0.3s ease-out forwards' : 'none',
+                            }}
+                        />
+                        <span className="font-display font-black uppercase tracking-wider" style={{ color: TEAL, fontSize: '0.85rem' }}>Added</span>
+                    </div>
+                </div>
+            </div>
+        );
+
+        // ============================================================
+        // ERROR TOAST
+        // ============================================================
+        const ErrorToast = ({ message }) => {
+            if (!message) return null;
+            return (
+                <div
+                    className="absolute z-50 pointer-events-none"
+                    style={{
+                        bottom: 12, left: 12, right: 12,
+                        animation: 'slideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1)',
+                    }}
+                >
+                    <div className="flex items-start gap-3 px-4 py-3 rounded-xl shadow-xl border border-red-100" style={{ backgroundColor: '#FEF2F2' }}>
+                        <IconAlert className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
+                        <p className="text-red-700 font-body text-base font-medium leading-snug">{message}</p>
+                    </div>
+                </div>
+            );
+        };
+
+        // ============================================================
+        // SUCCESS MODAL
+        // ============================================================
+        const SuccessModal = ({ data, onDone }) => {
+            if (!data) return null;
+            return (
+                <div
+                    className="absolute inset-0 z-50 flex items-center justify-center"
+                    style={{
+                        backgroundColor: 'rgba(0,0,0,0.45)',
+                        backdropFilter: 'blur(8px)',
+                        WebkitBackdropFilter: 'blur(8px)',
+                        animation: 'fadeIn 0.2s ease-out',
+                    }}
+                >
+                    <div
+                        className="bg-white rounded-3xl shadow-2xl w-full overflow-hidden"
+                        style={{
+                            animation: 'scaleUp 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                            maxWidth: 380,
+                            margin: '0 24px',
+                        }}
+                    >
+                        <div className="p-8 text-center" style={{ backgroundColor: TEAL }}>
+                            <div
+                                className="w-24 h-24 bg-white rounded-full flex items-center justify-center mx-auto mb-6 shadow-xl"
+                                style={{ animation: 'pulseGlow 2s ease-in-out infinite' }}
+                            >
+                                <IconCheck style={{ color: TEAL, width: 48, height: 48 }} />
+                            </div>
+                            <h2 className="text-white font-display text-3xl font-extrabold mb-2">Checkout Complete!</h2>
+                            <p className="text-white/80 font-body text-lg mb-8 leading-relaxed">
+                                <span className="font-bold text-white text-2xl">{data.count}</span> container{data.count > 1 ? 's' : ''} checked out to<br/>
+                                <span className="font-bold text-white text-xl border-b-2 border-white/30 pb-0.5">{data.user}</span>
+                            </p>
+                            <button
+                                onClick={onDone}
+                                className="w-full py-4 rounded-xl font-display font-bold text-lg uppercase tracking-wider shadow-lg bg-white hover:bg-gray-50 transition-colors"
+                                style={{ color: TEAL }}
+                            >
+                                Done
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // ============================================================
+        // DOWNLOAD MODAL
+        // ============================================================
+        const DownloadModal = ({ isOpen, onClose }) => {
+            if (!isOpen) return null;
+            return (
+                <div
+                    className="absolute inset-0 z-50 flex items-center justify-center"
+                    style={{
+                        backgroundColor: 'rgba(0,0,0,0.5)',
+                        backdropFilter: 'blur(8px)',
+                        WebkitBackdropFilter: 'blur(8px)',
+                        animation: 'fadeIn 0.2s ease-out',
+                    }}
+                    onClick={onClose}
+                >
+                    <div
+                        className="bg-white rounded-3xl shadow-2xl w-full overflow-hidden"
+                        style={{
+                            animation: 'scaleUp 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                            maxWidth: 380,
+                            margin: '0 24px',
+                        }}
+                        onClick={e => e.stopPropagation()}
+                    >
+                        <div className="p-5 pb-2 flex items-start justify-between">
+                            <h2 className="font-display text-lg font-extrabold" style={{ color: TEAL }}>Download the USEFULL app & sign up to get your QR code!</h2>
+                            <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors shrink-0 ml-2">
+                                <IconX className="w-4 h-4 text-gray-400" />
+                            </button>
+                        </div>
+                        <div className="p-5 pt-3 flex gap-5 justify-center">
+                            {['iOS', 'Android'].map((platform) => (
+                                <div key={platform} className="flex flex-col items-center gap-2">
+                                    <div className="w-32 h-32 bg-gray-50 rounded-xl border-2 border-gray-100 flex items-center justify-center">
+                                        {/* Placeholder QR */}
+                                        <svg viewBox="0 0 80 80" className="w-24 h-24">
+                                            <rect x="4" y="4" width="28" height="28" rx="3" fill="#222" />
+                                            <rect x="8" y="8" width="20" height="20" rx="2" fill="none" stroke="#fff" strokeWidth="3" />
+                                            <rect x="12" y="12" width="8" height="8" fill="#222" />
+                                            <rect x="48" y="4" width="28" height="28" rx="3" fill="#222" />
+                                            <rect x="52" y="8" width="20" height="20" rx="2" fill="none" stroke="#fff" strokeWidth="3" />
+                                            <rect x="56" y="12" width="8" height="8" fill="#222" />
+                                            <rect x="4" y="48" width="28" height="28" rx="3" fill="#222" />
+                                            <rect x="8" y="52" width="20" height="20" rx="2" fill="none" stroke="#fff" strokeWidth="3" />
+                                            <rect x="12" y="56" width="8" height="8" fill="#222" />
+                                            <rect x="36" y="4" width="6" height="6" fill="#222" />
+                                            <rect x="36" y="12" width="6" height="6" fill="#222" />
+                                            <rect x="36" y="36" width="6" height="6" fill="#222" />
+                                            <rect x="44" y="36" width="6" height="6" fill="#222" />
+                                            <rect x="52" y="36" width="6" height="6" fill="#222" />
+                                            <rect x="60" y="36" width="6" height="6" fill="#222" />
+                                            <rect x="68" y="36" width="6" height="6" fill="#222" />
+                                            <rect x="36" y="44" width="6" height="6" fill="#222" />
+                                            <rect x="52" y="44" width="6" height="6" fill="#222" />
+                                            <rect x="36" y="52" width="6" height="6" fill="#222" />
+                                            <rect x="44" y="52" width="6" height="6" fill="#222" />
+                                            <rect x="60" y="52" width="6" height="6" fill="#222" />
+                                            <rect x="36" y="60" width="6" height="6" fill="#222" />
+                                            <rect x="52" y="60" width="6" height="6" fill="#222" />
+                                            <rect x="68" y="60" width="6" height="6" fill="#222" />
+                                            <rect x="44" y="68" width="6" height="6" fill="#222" />
+                                            <rect x="60" y="68" width="6" height="6" fill="#222" />
+                                        </svg>
+                                    </div>
+                                    <span className="font-display font-bold text-sm text-gray-700">{platform}</span>
+                                </div>
+                            ))}
+                        </div>
+                        <p className="px-5 pb-4 text-center font-body text-xs text-gray-400">Scan with your phone's camera to download</p>
+                    </div>
+                </div>
+            );
+        };
+
+        // ============================================================
+        // MAIN APP — PORTRAIT LAYOUT
+        // ============================================================
+        const App = () => {
+            const [items, setItems]                         = useState([]);
+            const [status, setStatus]                       = useState('idle');
+            const [error, setError]                         = useState(null);
+            const [timeLeft, setTimeLeft]                   = useState(30);
+            const [successData, setSuccessData]             = useState(null);
+            const [justScanned, setJustScanned]             = useState(false);
+            const [showDownloadModal, setShowDownloadModal] = useState(false);
+            const scannedCodesRef = useRef(new Set());
+            const audioCtxRef = useRef(null);
+            const dingBufferRef = useRef(null);
+
+            useEffect(() => {
+                const unlock = async () => {
+                    if (audioCtxRef.current) return;
+                    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                    audioCtxRef.current = ctx;
+                    try {
+                        const res = await fetch('../success-ding.m4a');
+                        const buf = await res.arrayBuffer();
+                        dingBufferRef.current = await ctx.decodeAudioData(buf);
+                    } catch (_) {}
+                };
+                document.addEventListener('touchstart', unlock, { once: true });
+                document.addEventListener('click', unlock, { once: true });
+                return () => {
+                    document.removeEventListener('touchstart', unlock);
+                    document.removeEventListener('click', unlock);
+                };
+            }, []);
+
+            const playDing = useCallback(() => {
+                if (!audioCtxRef.current || !dingBufferRef.current) return;
+                const source = audioCtxRef.current.createBufferSource();
+                source.buffer = dingBufferRef.current;
+                source.connect(audioCtxRef.current.destination);
+                source.start(0);
+            }, []);
+
+            const hasItems    = items.length > 0;
+            const showTimeout = hasItems && status !== 'success';
+
+            useEffect(() => {
+                if (!showTimeout) { setTimeLeft(30); return; }
+                const timer = setInterval(() => {
+                    setTimeLeft(prev => {
+                        if (prev <= 1) { handleCancel(); return 30; }
+                        return prev - 1;
+                    });
+                }, 1000);
+                return () => clearInterval(timer);
+            }, [showTimeout]);
+
+            const handleCancel = useCallback(() => {
+                setItems([]); setStatus('idle'); setError(null);
+                setSuccessData(null); setTimeLeft(30); setJustScanned(false);
+                scannedCodesRef.current.clear();
+            }, []);
+
+            const handleScanContainer = useCallback(() => {
+                playDing();
+                setTimeLeft(30);
+                setItems(prev => [...prev, { id: Date.now() }]);
+                setStatus('scanning');
+                setError(null);
+                setJustScanned(true);
+                setTimeout(() => setJustScanned(false), 1500);
+            }, [playDing]);
+
+            const handleScanUser = useCallback(() => {
+                if (items.length === 0) {
+                    setError("Please scan a USEFULL container first.");
+                    setTimeout(() => setError(null), 3000);
+                    return;
+                }
+                playDing();
+                setSuccessData({ user: "Owen", count: items.length });
+                setStatus('success');
+                setTimeout(() => handleCancel(), 4000);
+            }, [items.length, handleCancel, playDing]);
+
+            const handleQRResult = useCallback((decoded) => {
+                if (scannedCodesRef.current.has(decoded)) return;
+                scannedCodesRef.current.add(decoded);
+                if (decoded.startsWith('cup')) {
+                    handleScanContainer();
+                } else if (decoded.startsWith('user')) {
+                    handleScanUser();
+                } else {
+                    setError('Unrecognized QR code');
+                    setTimeout(() => setError(null), 4000);
+                }
+            }, [handleScanContainer, handleScanUser]);
+
+            return (
+                <div
+                    className="h-full w-full flex flex-col overflow-hidden select-none relative"
+                    style={{ backgroundColor: '#EEF2F3' }}
+                >
+                    {/* ── CAMERA — top half ── */}
+                    <div className="relative shrink-0" style={{ flex: '0 0 47%' }}>
+                        <CameraBox isScanning={status !== 'success'} onQRResult={handleQRResult} />
+                        <ErrorToast message={error} />
+                    </div>
+
+                    {/* ── Teal accent divider ── */}
+                    <div className="camera-content-divider shrink-0" />
+
+                    {/* ── CONTENT — bottom section ── */}
+                    <div
+                        className="flex-1 flex flex-col overflow-hidden"
+                        style={{ padding: '12px 14px 10px 16px', minHeight: 0, gap: 10 }}
+                    >
+                        {/* Two-column main area */}
+                        <div className="flex-1 flex gap-3 overflow-hidden" style={{ minHeight: 0 }}>
+
+                            {/* LEFT: instructions */}
+                            <div className="flex-1 flex flex-col justify-center gap-3 overflow-hidden" style={{ minWidth: 0 }}>
+                                <div>
+                                    <h2
+                                        className="font-display font-extrabold leading-tight"
+                                        style={{ color: TEAL, fontSize: '2.6rem' }}
+                                    >
+                                        {hasItems ? 'Scan more containers' : 'Scan your containers'}
+                                    </h2>
+                                    <p className="font-body text-gray-500 mt-2 leading-snug" style={{ fontSize: '1.15rem' }}>
+                                        {hasItems
+                                            ? 'Or scan your QR code to finish checkout'
+                                            : 'Hold each container in front of the camera'}
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* RIGHT: count card */}
+                            {hasItems && status !== 'success' && (
+                                <div className="shrink-0" style={{ width: '44%', alignSelf: 'center', paddingTop: 8, paddingBottom: 8 }}>
+                                    <CountCard count={items.length} justScanned={justScanned} />
+                                </div>
+                            )}
+                        </div>
+
+                        {/* ── Bottom strip: logo left, action right ── */}
+                        <div
+                            className="shrink-0 flex items-center"
+                            style={{ borderTop: '1px solid rgba(0,140,149,0.12)', paddingTop: 9, gap: 10 }}
+                        >
+                            <div className="flex flex-col items-start">
+                                <UsefullLogo style={{ height: '2rem' }} className="w-auto" />
+                                <p className="font-display font-bold uppercase tracking-[0.2em]" style={{ color: TEAL, fontSize: '0.6rem', marginTop: 2 }}>Checkout Station</p>
+                            </div>
+
+                            <div className="ml-auto">
+                                {hasItems && status !== 'success' ? (
+                                    /* Combined cancel + countdown button */
+                                    <button
+                                        onClick={handleCancel}
+                                        className="flex items-center gap-2 rounded-xl transition-all"
+                                        style={{
+                                            padding: '9px 16px',
+                                            border: `1.5px solid ${timeLeft <= 10 ? '#fca5a5' : '#e5e7eb'}`,
+                                            backgroundColor: timeLeft <= 10 ? '#FEF2F2' : 'white',
+                                            cursor: 'pointer',
+                                            transition: 'border-color 0.3s, background-color 0.3s',
+                                        }}
+                                    >
+                                        <svg viewBox="0 0 24 24" fill="none" stroke={timeLeft <= 10 ? '#ef4444' : '#9ca3af'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 18, height: 18 }}>
+                                            <circle cx="12" cy="12" r="10"/><path d="M12 6v6l3 3"/>
+                                        </svg>
+                                        <span className="font-display font-bold tabular-nums" style={{ fontSize: '1rem', color: timeLeft <= 10 ? '#ef4444' : '#6b7280' }}>
+                                            {timeLeft}s
+                                        </span>
+                                        <div style={{ width: 1, height: 16, backgroundColor: timeLeft <= 10 ? '#fca5a5' : '#e2e8f0', margin: '0 2px' }} />
+                                        <span className="font-display font-bold uppercase tracking-wider" style={{ fontSize: '1rem', color: timeLeft <= 10 ? '#ef4444' : '#9ca3af' }}>
+                                            Cancel
+                                        </span>
+                                    </button>
+                                ) : (
+                                    <button
+                                        onClick={() => setShowDownloadModal(true)}
+                                        className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white border border-gray-200 shadow-sm hover:bg-gray-50 transition-colors"
+                                    >
+                                        <IconDownload />
+                                        <span className="font-body font-medium text-gray-500" style={{ fontSize: '0.95rem' }}>Get your USEFULL QR code</span>
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+
+                    <DownloadModal isOpen={showDownloadModal} onClose={() => setShowDownloadModal(false)} />
+                    <SuccessModal data={status === 'success' ? successData : null} onDone={handleCancel} />
+
+                    {/* ── DEMO TOOLBAR (mockup only) ── */}
+                    <div
+                        className="absolute z-40 flex items-center gap-2"
+                        style={{
+                            top: 12, right: 12,
+                            background: 'rgba(0,0,0,0.72)',
+                            borderRadius: 10,
+                            padding: '5px 8px',
+                            backdropFilter: 'blur(8px)',
+                        }}
+                    >
+                        <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 8, fontFamily: 'monospace', textTransform: 'uppercase', letterSpacing: '0.1em' }}>demo</span>
+                        <button
+                            onClick={handleScanContainer}
+                            style={{ background: TEAL, color: 'white', border: 'none', borderRadius: 6, padding: '4px 9px', fontSize: '0.7rem', fontFamily: '"Plus Jakarta Sans", sans-serif', fontWeight: 700, cursor: 'pointer' }}
+                        >
+                            + Container
+                        </button>
+                        <button
+                            onClick={handleScanUser}
+                            style={{
+                                background: hasItems ? '#2d6a6e' : 'rgba(255,255,255,0.12)',
+                                color: hasItems ? 'white' : 'rgba(255,255,255,0.3)',
+                                border: 'none', borderRadius: 6, padding: '4px 9px', fontSize: '0.7rem',
+                                fontFamily: '"Plus Jakarta Sans", sans-serif', fontWeight: 700,
+                                cursor: hasItems ? 'pointer' : 'default',
+                            }}
+                        >
+                            Checkout
+                        </button>
+                    </div>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>

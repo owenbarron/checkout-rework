@@ -32,7 +32,7 @@
                 extend: {
                     fontFamily: {
                         display: ['"Plus Jakarta Sans"', 'system-ui', 'sans-serif'],
-                        body: ['"DM Sans"', 'system-ui', 'sans-serif'],
+                        body:    ['"DM Sans"', 'system-ui', 'sans-serif'],
                     }
                 }
             }
@@ -44,20 +44,25 @@
         html, body, #root { height: 100%; width: 100%; margin: 0; padding: 0; overflow: hidden; }
         body { font-family: 'DM Sans', sans-serif; background: #EEF2F3; }
 
-        @keyframes fadeIn       { from { opacity: 0; } to { opacity: 1; } }
-        @keyframes scaleUp      { from { opacity: 0; transform: scale(0.92); } to { opacity: 1; transform: scale(1); } }
-        @keyframes slideUp      { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes slideInRight { from { opacity: 0; transform: translateX(24px); } to { opacity: 1; transform: translateX(0); } }
-        @keyframes countPop     { 0% { transform: scale(1); } 40% { transform: scale(1.18); } 100% { transform: scale(1); } }
-        @keyframes checkDraw    { from { stroke-dashoffset: 24; } to { stroke-dashoffset: 0; } }
-        @keyframes pulseGlow    { 0%, 100% { box-shadow: 0 0 0 0 rgba(0,140,149,0.3); } 50% { box-shadow: 0 0 0 16px rgba(0,140,149,0); } }
-        @keyframes scanLine     {
+        @keyframes fadeIn    { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes scaleUp   { from { opacity: 0; transform: scale(0.92); } to { opacity: 1; transform: scale(1); } }
+        @keyframes slideUp   { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes countPop  { 0% { transform: scale(1); } 40% { transform: scale(1.18); } 100% { transform: scale(1); } }
+        @keyframes checkDraw { from { stroke-dashoffset: 24; } to { stroke-dashoffset: 0; } }
+        @keyframes pulseGlow { 0%, 100% { box-shadow: 0 0 0 0 rgba(0,140,149,0.3); } 50% { box-shadow: 0 0 0 16px rgba(0,140,149,0); } }
+        @keyframes scanLine  {
             0%   { top: 8%; opacity: 0; }
             5%   { opacity: 1; }
             95%  { opacity: 1; }
             100% { top: 92%; opacity: 0; }
         }
         .scan-line { animation: scanLine 2.2s ease-in-out infinite; }
+
+        /* Portrait-only: teal gradient divider between camera and content */
+        .camera-content-divider {
+            height: 3px;
+            background: linear-gradient(90deg, transparent, rgba(0,140,149,0.15), rgba(0,140,149,0.3), rgba(0,140,149,0.15), transparent);
+        }
     </style>
 </head>
 <body>
@@ -90,12 +95,33 @@
                 <circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/>
             </svg>
         );
+        const IconQR = ({ style }) => (
+            <svg viewBox="0 0 24 24" fill="currentColor" style={style}>
+                {/* Top-left finder */}
+                <rect x="2"  y="2"  width="9" height="9" rx="1.5" fill="none" stroke="currentColor" strokeWidth="1.5"/>
+                <rect x="4.5" y="4.5" width="4" height="4"/>
+                {/* Top-right finder */}
+                <rect x="13" y="2"  width="9" height="9" rx="1.5" fill="none" stroke="currentColor" strokeWidth="1.5"/>
+                <rect x="15.5" y="4.5" width="4" height="4"/>
+                {/* Bottom-left finder */}
+                <rect x="2"  y="13" width="9" height="9" rx="1.5" fill="none" stroke="currentColor" strokeWidth="1.5"/>
+                <rect x="4.5" y="15.5" width="4" height="4"/>
+                {/* Data cells */}
+                <rect x="13" y="13" width="2.5" height="2.5"/>
+                <rect x="17" y="13" width="2.5" height="2.5"/>
+                <rect x="13" y="17" width="2.5" height="2.5"/>
+                <rect x="17" y="17" width="2.5" height="2.5"/>
+                <rect x="20" y="15" width="2" height="2"/>
+                <rect x="15" y="20" width="2" height="2"/>
+                <rect x="19" y="20" width="3" height="2"/>
+            </svg>
+        );
 
         // ============================================================
-        // USEFULL LOGO (teal, full wordmark)
+        // USEFULL LOGO — full wordmark
         // ============================================================
-        const UsefullLogo = ({ className }) => (
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 144" className={className}>
+        const UsefullLogo = ({ className, style }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 144" className={className} style={style}>
                 <g>
                     <path fill="#008c95" d="M88.85,83.9c0,11.31-7.44,18.34-19.4,18.34s-19.4-7.03-19.4-18.34V46.13h-6.49v37.92c0,14.94,10.16,24.6,25.89,24.6s25.89-9.66,25.89-24.6V46.13h-6.49v37.77Z"/>
                     <path fill="#008c95" d="M141.57,73.67l-.29-.09c-10.6-3.34-17.04-5.84-17.04-12.37,0-6.19,5.89-10.04,15.37-10.04,10.06,0,16.82,4.22,16.82,10.5v1.38h6.41v-1.68c0-9.49-9.77-16.38-23.23-16.38s-22.09,6.64-22.09,16.53c0,11.6,12.64,15.48,21.87,18.31,10.7,3.24,17.72,5.87,17.72,12.6,0,6.19-6.12,10.04-15.98,10.04-10.56,0-17.65-4.22-17.65-10.5v-1.3h-6.41v1.61c0,9.64,9.9,16.38,24.07,16.38s22.77-6.46,22.77-16.45c0-11.74-12.91-15.66-22.34-18.53Z"/>
@@ -111,9 +137,9 @@
         );
 
         // ============================================================
-        // CAMERA BOX (live feed, full-height rectangular)
+        // CAMERA BOX
         // ============================================================
-        const CameraBox = ({ isScanning, onQRResult }) => {
+        const CameraBox = ({ isScanning, onQRResult, isPortrait }) => {
             const videoRef     = useRef(null);
             const containerRef = useRef(null);
             const canvasRef    = useRef(document.createElement('canvas'));
@@ -184,11 +210,13 @@
                 return () => clearInterval(interval);
             }, [isScanning, onQRResult]);
 
+            const borderRadius = isPortrait ? '0 0 24px 24px' : '16px';
+
             return (
                 <div
                     ref={containerRef}
-                    className="w-full h-full relative rounded-2xl overflow-hidden shadow-xl"
-                    style={{ backgroundColor: '#111' }}
+                    className="w-full h-full relative overflow-hidden"
+                    style={{ backgroundColor: '#111', borderRadius }}
                 >
                     <video
                         ref={videoRef}
@@ -196,6 +224,11 @@
                         className="absolute inset-0 w-full h-full object-cover"
                         style={{ transform: 'scaleX(-1)' }}
                     />
+
+                    {isPortrait && (
+                        <div className="absolute bottom-0 left-0 right-0 pointer-events-none"
+                             style={{ height: 60, background: 'linear-gradient(to bottom, transparent, rgba(0,0,0,0.18))' }} />
+                    )}
 
                     {!cameraReady && (
                         <div className="absolute inset-0 flex items-center justify-center">
@@ -209,61 +242,58 @@
                     )}
 
                     {/* Corner brackets */}
-                    <div className="absolute top-6 left-6 w-16 h-16 pointer-events-none"
-                         style={{ borderTop: `6px solid ${TEAL}`, borderLeft: `6px solid ${TEAL}`, borderRadius: '6px 0 0 0' }} />
-                    <div className="absolute top-6 right-6 w-16 h-16 pointer-events-none"
-                         style={{ borderTop: `6px solid ${TEAL}`, borderRight: `6px solid ${TEAL}`, borderRadius: '0 6px 0 0' }} />
-                    <div className="absolute bottom-6 left-6 w-16 h-16 pointer-events-none"
-                         style={{ borderBottom: `6px solid ${TEAL}`, borderLeft: `6px solid ${TEAL}`, borderRadius: '0 0 0 6px' }} />
-                    <div className="absolute bottom-6 right-6 w-16 h-16 pointer-events-none"
-                         style={{ borderBottom: `6px solid ${TEAL}`, borderRight: `6px solid ${TEAL}`, borderRadius: '0 0 6px 0' }} />
+                    {[
+                        { top: 16, left: 16,   borderTop:    `6px solid ${TEAL}`, borderLeft:   `6px solid ${TEAL}`, borderRadius: '6px 0 0 0' },
+                        { top: 16, right: 16,  borderTop:    `6px solid ${TEAL}`, borderRight:  `6px solid ${TEAL}`, borderRadius: '0 6px 0 0' },
+                        { bottom: 16, left: 16,  borderBottom: `6px solid ${TEAL}`, borderLeft:   `6px solid ${TEAL}`, borderRadius: '0 0 0 6px' },
+                        { bottom: 16, right: 16, borderBottom: `6px solid ${TEAL}`, borderRight:  `6px solid ${TEAL}`, borderRadius: '0 0 6px 0' },
+                    ].map((s, i) => (
+                        <div key={i} className="absolute pointer-events-none" style={{ ...s, width: 64, height: 64 }} />
+                    ))}
 
                     {isScanning && (
-                        <div
-                            className="scan-line absolute left-[8%] right-[8%] h-[2px] pointer-events-none"
-                            style={{ backgroundColor: `${TEAL}AA` }}
-                        />
+                        <div className="scan-line absolute left-[8%] right-[8%] h-[2px] pointer-events-none"
+                             style={{ backgroundColor: `${TEAL}AA` }} />
                     )}
                 </div>
             );
         };
 
         // ============================================================
-        // COUNT CARD
+        // COUNT CARD — vertical layout, dark gray number
         // ============================================================
         const CountCard = ({ count, justScanned }) => (
             <div
-                className="w-full bg-white rounded-2xl px-6 py-4 border border-gray-100 shadow-lg flex flex-col items-center"
-                style={{ animation: 'scaleUp 0.4s cubic-bezier(0.16, 1, 0.3, 1)' }}
+                className="w-full bg-white rounded-2xl border border-gray-100 shadow-lg flex flex-col items-center justify-center"
+                style={{ animation: 'scaleUp 0.4s cubic-bezier(0.16, 1, 0.3, 1)', padding: '20px 12px', gap: 2 }}
             >
-                <span className="font-display font-bold uppercase tracking-[0.2em] mb-1" style={{ color: TEAL, fontSize: '1.03rem' }}>
+                <span className="font-display font-bold uppercase text-center"
+                      style={{ color: TEAL, fontSize: '1rem', letterSpacing: '0.12em' }}>
                     Ready for Checkout
                 </span>
-                <div
-                    className="relative"
-                    style={{ animation: justScanned ? 'countPop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1)' : 'none' }}
-                    key={count}
-                >
-                    <span className="font-display font-black text-slate-800 leading-none" style={{ fontSize: '10.53rem' }}>
+
+                <div style={{ animation: justScanned ? 'countPop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1)' : 'none' }} key={count}>
+                    <span className="font-display font-black text-slate-800 leading-none"
+                          style={{ fontSize: '7rem', lineHeight: 1 }}>
                         {count}
                     </span>
                 </div>
-                <span className="font-body font-semibold uppercase tracking-wider text-gray-400 -mt-1" style={{ fontSize: '1.17rem' }}>
+
+                <span className="font-body font-semibold text-gray-400 uppercase tracking-wider"
+                      style={{ fontSize: '1.4rem' }}>
                     Container{count !== 1 ? 's' : ''}
                 </span>
-                <div
-                    className="mt-3 transition-all duration-300"
-                    style={{ opacity: justScanned ? 1 : 0, transform: justScanned ? 'translateY(0)' : 'translateY(6px)' }}
-                >
-                    <div
-                        className="flex items-center gap-2 px-4 py-2 rounded-full"
-                        style={{ backgroundColor: TEAL_LIGHT, border: `1px solid ${TEAL}30` }}
-                    >
-                        <IconCheck
-                            className="w-4 h-4"
-                            style={{ color: TEAL, strokeDasharray: 24, animation: justScanned ? 'checkDraw 0.3s ease-out forwards' : 'none' }}
-                        />
-                        <span className="font-display font-black uppercase tracking-wider" style={{ color: TEAL, fontSize: '1.03rem' }}>Added</span>
+
+                <div style={{ marginTop: 10, opacity: justScanned ? 1 : 0,
+                              transform: justScanned ? 'translateY(0)' : 'translateY(4px)',
+                              transition: 'all 0.3s ease' }}>
+                    <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full"
+                         style={{ backgroundColor: TEAL_LIGHT, border: `1px solid ${TEAL}30` }}>
+                        <IconCheck style={{ color: TEAL, width: 15, height: 15,
+                                           strokeDasharray: 24,
+                                           animation: justScanned ? 'checkDraw 0.3s ease-out forwards' : 'none' }} />
+                        <span className="font-display font-black uppercase tracking-wider"
+                              style={{ color: TEAL, fontSize: '0.85rem' }}>Added</span>
                     </div>
                 </div>
             </div>
@@ -275,11 +305,10 @@
         const ErrorToast = ({ message }) => {
             if (!message) return null;
             return (
-                <div
-                    className="absolute bottom-4 left-4 right-4 z-50 pointer-events-none"
-                    style={{ animation: 'slideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1)' }}
-                >
-                    <div className="flex items-start gap-3 px-5 py-4 rounded-xl shadow-xl border border-red-100 max-w-lg" style={{ backgroundColor: '#FEF2F2' }}>
+                <div className="absolute bottom-4 left-4 right-4 z-50 pointer-events-none"
+                     style={{ animation: 'slideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1)' }}>
+                    <div className="flex items-start gap-3 px-5 py-4 rounded-xl shadow-xl border border-red-100 max-w-lg"
+                         style={{ backgroundColor: '#FEF2F2' }}>
                         <IconAlert className="w-6 h-6 text-red-500 shrink-0 mt-0.5" />
                         <p className="text-red-700 font-body text-lg font-medium leading-snug">{message}</p>
                     </div>
@@ -293,13 +322,14 @@
         const SuccessModal = ({ data, onDone }) => {
             if (!data) return null;
             return (
-                <div
-                    className="absolute inset-0 z-50 flex items-center justify-center"
-                    style={{ backgroundColor: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)', animation: 'fadeIn 0.2s ease-out' }}
-                >
-                    <div className="bg-white rounded-3xl shadow-2xl w-full mx-6 overflow-hidden" style={{ animation: 'scaleUp 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)', maxWidth: '36.4rem' }}>
+                <div className="absolute inset-0 z-50 flex items-center justify-center"
+                     style={{ backgroundColor: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(8px)',
+                              WebkitBackdropFilter: 'blur(8px)', animation: 'fadeIn 0.2s ease-out' }}>
+                    <div className="bg-white rounded-3xl shadow-2xl w-full mx-6 overflow-hidden"
+                         style={{ animation: 'scaleUp 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)', maxWidth: '36.4rem' }}>
                         <div className="p-10 text-center" style={{ backgroundColor: TEAL }}>
-                            <div className="w-32 h-32 bg-white rounded-full flex items-center justify-center mx-auto mb-8 shadow-xl" style={{ animation: 'pulseGlow 2s ease-in-out infinite' }}>
+                            <div className="w-32 h-32 bg-white rounded-full flex items-center justify-center mx-auto mb-8 shadow-xl"
+                                 style={{ animation: 'pulseGlow 2s ease-in-out infinite' }}>
                                 <IconCheck className="w-16 h-16" style={{ color: TEAL }} />
                             </div>
                             <h2 className="text-white font-display text-4xl font-extrabold mb-3">Checkout Complete!</h2>
@@ -307,7 +337,9 @@
                                 <span className="font-bold text-white text-3xl">{data.count}</span> container{data.count > 1 ? 's' : ''} checked out to<br/>
                                 <span className="font-bold text-white text-2xl border-b-2 border-white/30 pb-0.5">{data.user}</span>
                             </p>
-                            <button onClick={onDone} className="w-full py-5 rounded-xl font-display font-bold text-xl uppercase tracking-wider shadow-lg bg-white hover:bg-gray-50 transition-colors" style={{ color: TEAL }}>
+                            <button onClick={onDone}
+                                    className="w-full py-5 rounded-xl font-display font-bold text-xl uppercase tracking-wider shadow-lg bg-white hover:bg-gray-50 transition-colors"
+                                    style={{ color: TEAL }}>
                                 Done
                             </button>
                         </div>
@@ -322,20 +354,19 @@
         const DownloadModal = ({ isOpen, onClose }) => {
             if (!isOpen) return null;
             return (
-                <div
-                    className="absolute inset-0 z-50 flex items-center justify-center"
-                    style={{ backgroundColor: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)', animation: 'fadeIn 0.2s ease-out' }}
-                    onClick={onClose}
-                >
-                    <div
-                        className="bg-white rounded-3xl shadow-2xl max-w-lg w-full mx-6 overflow-hidden"
-                        style={{ animation: 'scaleUp 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)' }}
-                        onClick={e => e.stopPropagation()}
-                    >
+                <div className="absolute inset-0 z-50 flex items-center justify-center"
+                     style={{ backgroundColor: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(8px)',
+                              WebkitBackdropFilter: 'blur(8px)', animation: 'fadeIn 0.2s ease-out' }}
+                     onClick={onClose}>
+                    <div className="bg-white rounded-3xl shadow-2xl max-w-lg w-full mx-6 overflow-hidden"
+                         style={{ animation: 'scaleUp 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)' }}
+                         onClick={e => e.stopPropagation()}>
                         <div className="p-6 pb-2 flex items-start justify-between">
                             <div className="flex items-center gap-3">
-                                <img src="../app-download.png" alt="" className="w-10 h-10" style={{ filter: 'brightness(0) saturate(100%) invert(36%) sepia(85%) saturate(500%) hue-rotate(150deg)' }} />
-                                <h2 className="font-display text-xl font-extrabold" style={{ color: TEAL }}>Download the USEFULL app to get started!</h2>
+                                <IconQR style={{ width: 36, height: 36, color: TEAL, flexShrink: 0 }} />
+                                <h2 className="font-display text-xl font-extrabold" style={{ color: TEAL }}>
+                                    Download the USEFULL app &amp; sign up to get your QR code!
+                                </h2>
                             </div>
                             <button onClick={onClose} className="p-2 rounded-lg hover:bg-gray-100 transition-colors shrink-0 ml-2">
                                 <IconX className="w-5 h-5 text-gray-400" />
@@ -345,16 +376,16 @@
                             <div className="flex flex-col items-center gap-3">
                                 <div className="w-40 h-40 bg-gray-50 rounded-2xl border-2 border-gray-100 flex items-center justify-center">
                                     <svg viewBox="0 0 120 120" className="w-32 h-32">
-                                        <rect x="10" y="10" width="30" height="30" rx="4" fill="#222" /><rect x="80" y="10" width="30" height="30" rx="4" fill="#222" /><rect x="10" y="80" width="30" height="30" rx="4" fill="#222" />
-                                        <rect x="15" y="15" width="20" height="20" rx="2" fill="none" stroke="#fff" strokeWidth="4" /><rect x="85" y="15" width="20" height="20" rx="2" fill="none" stroke="#fff" strokeWidth="4" /><rect x="15" y="85" width="20" height="20" rx="2" fill="none" stroke="#fff" strokeWidth="4" />
-                                        <rect x="22" y="22" width="6" height="6" fill="#222" /><rect x="92" y="22" width="6" height="6" fill="#222" /><rect x="22" y="92" width="6" height="6" fill="#222" />
-                                        <rect x="50" y="10" width="6" height="6" fill="#222" /><rect x="58" y="10" width="6" height="6" fill="#222" /><rect x="50" y="18" width="6" height="6" fill="#222" /><rect x="66" y="18" width="6" height="6" fill="#222" /><rect x="50" y="26" width="6" height="6" fill="#222" /><rect x="58" y="26" width="6" height="6" fill="#222" /><rect x="66" y="26" width="6" height="6" fill="#222" />
-                                        <rect x="50" y="50" width="6" height="6" fill="#222" /><rect x="58" y="50" width="6" height="6" fill="#222" /><rect x="10" y="50" width="6" height="6" fill="#222" /><rect x="26" y="50" width="6" height="6" fill="#222" /><rect x="34" y="50" width="6" height="6" fill="#222" />
-                                        <rect x="10" y="58" width="6" height="6" fill="#222" /><rect x="18" y="58" width="6" height="6" fill="#222" /><rect x="34" y="58" width="6" height="6" fill="#222" /><rect x="50" y="58" width="6" height="6" fill="#222" /><rect x="66" y="58" width="6" height="6" fill="#222" />
-                                        <rect x="10" y="66" width="6" height="6" fill="#222" /><rect x="26" y="66" width="6" height="6" fill="#222" /><rect x="50" y="66" width="6" height="6" fill="#222" /><rect x="58" y="66" width="6" height="6" fill="#222" />
-                                        <rect x="80" y="50" width="6" height="6" fill="#222" /><rect x="96" y="50" width="6" height="6" fill="#222" /><rect x="104" y="50" width="6" height="6" fill="#222" /><rect x="80" y="58" width="6" height="6" fill="#222" /><rect x="88" y="58" width="6" height="6" fill="#222" /><rect x="104" y="58" width="6" height="6" fill="#222" /><rect x="80" y="66" width="6" height="6" fill="#222" /><rect x="96" y="66" width="6" height="6" fill="#222" />
-                                        <rect x="80" y="80" width="6" height="6" fill="#222" /><rect x="88" y="80" width="6" height="6" fill="#222" /><rect x="96" y="80" width="6" height="6" fill="#222" /><rect x="80" y="88" width="6" height="6" fill="#222" /><rect x="104" y="88" width="6" height="6" fill="#222" /><rect x="88" y="96" width="6" height="6" fill="#222" /><rect x="96" y="96" width="6" height="6" fill="#222" /><rect x="104" y="104" width="6" height="6" fill="#222" />
-                                        <rect x="50" y="80" width="6" height="6" fill="#222" /><rect x="58" y="88" width="6" height="6" fill="#222" /><rect x="66" y="80" width="6" height="6" fill="#222" /><rect x="50" y="96" width="6" height="6" fill="#222" /><rect x="66" y="96" width="6" height="6" fill="#222" /><rect x="50" y="104" width="6" height="6" fill="#222" /><rect x="58" y="104" width="6" height="6" fill="#222" /><rect x="66" y="104" width="6" height="6" fill="#222" />
+                                        <rect x="10" y="10" width="30" height="30" rx="4" fill="#222"/><rect x="80" y="10" width="30" height="30" rx="4" fill="#222"/><rect x="10" y="80" width="30" height="30" rx="4" fill="#222"/>
+                                        <rect x="15" y="15" width="20" height="20" rx="2" fill="none" stroke="#fff" strokeWidth="4"/><rect x="85" y="15" width="20" height="20" rx="2" fill="none" stroke="#fff" strokeWidth="4"/><rect x="15" y="85" width="20" height="20" rx="2" fill="none" stroke="#fff" strokeWidth="4"/>
+                                        <rect x="22" y="22" width="6" height="6" fill="#222"/><rect x="92" y="22" width="6" height="6" fill="#222"/><rect x="22" y="92" width="6" height="6" fill="#222"/>
+                                        <rect x="50" y="10" width="6" height="6" fill="#222"/><rect x="58" y="10" width="6" height="6" fill="#222"/><rect x="50" y="18" width="6" height="6" fill="#222"/><rect x="66" y="18" width="6" height="6" fill="#222"/><rect x="50" y="26" width="6" height="6" fill="#222"/><rect x="58" y="26" width="6" height="6" fill="#222"/><rect x="66" y="26" width="6" height="6" fill="#222"/>
+                                        <rect x="50" y="50" width="6" height="6" fill="#222"/><rect x="58" y="50" width="6" height="6" fill="#222"/><rect x="10" y="50" width="6" height="6" fill="#222"/><rect x="26" y="50" width="6" height="6" fill="#222"/><rect x="34" y="50" width="6" height="6" fill="#222"/>
+                                        <rect x="10" y="58" width="6" height="6" fill="#222"/><rect x="18" y="58" width="6" height="6" fill="#222"/><rect x="34" y="58" width="6" height="6" fill="#222"/><rect x="50" y="58" width="6" height="6" fill="#222"/><rect x="66" y="58" width="6" height="6" fill="#222"/>
+                                        <rect x="10" y="66" width="6" height="6" fill="#222"/><rect x="26" y="66" width="6" height="6" fill="#222"/><rect x="50" y="66" width="6" height="6" fill="#222"/><rect x="58" y="66" width="6" height="6" fill="#222"/>
+                                        <rect x="80" y="50" width="6" height="6" fill="#222"/><rect x="96" y="50" width="6" height="6" fill="#222"/><rect x="104" y="50" width="6" height="6" fill="#222"/><rect x="80" y="58" width="6" height="6" fill="#222"/><rect x="88" y="58" width="6" height="6" fill="#222"/><rect x="104" y="58" width="6" height="6" fill="#222"/><rect x="80" y="66" width="6" height="6" fill="#222"/><rect x="96" y="66" width="6" height="6" fill="#222"/>
+                                        <rect x="80" y="80" width="6" height="6" fill="#222"/><rect x="88" y="80" width="6" height="6" fill="#222"/><rect x="96" y="80" width="6" height="6" fill="#222"/><rect x="80" y="88" width="6" height="6" fill="#222"/><rect x="104" y="88" width="6" height="6" fill="#222"/><rect x="88" y="96" width="6" height="6" fill="#222"/><rect x="96" y="96" width="6" height="6" fill="#222"/><rect x="104" y="104" width="6" height="6" fill="#222"/>
+                                        <rect x="50" y="80" width="6" height="6" fill="#222"/><rect x="58" y="88" width="6" height="6" fill="#222"/><rect x="66" y="80" width="6" height="6" fill="#222"/><rect x="50" y="96" width="6" height="6" fill="#222"/><rect x="66" y="96" width="6" height="6" fill="#222"/><rect x="50" y="104" width="6" height="6" fill="#222"/><rect x="58" y="104" width="6" height="6" fill="#222"/><rect x="66" y="104" width="6" height="6" fill="#222"/>
                                     </svg>
                                 </div>
                                 <div className="flex items-center gap-2">
@@ -366,16 +397,16 @@
                             <div className="flex flex-col items-center gap-3">
                                 <div className="w-40 h-40 bg-gray-50 rounded-2xl border-2 border-gray-100 flex items-center justify-center">
                                     <svg viewBox="0 0 120 120" className="w-32 h-32">
-                                        <rect x="10" y="10" width="30" height="30" rx="4" fill="#222" /><rect x="80" y="10" width="30" height="30" rx="4" fill="#222" /><rect x="10" y="80" width="30" height="30" rx="4" fill="#222" />
-                                        <rect x="15" y="15" width="20" height="20" rx="2" fill="none" stroke="#fff" strokeWidth="4" /><rect x="85" y="15" width="20" height="20" rx="2" fill="none" stroke="#fff" strokeWidth="4" /><rect x="15" y="85" width="20" height="20" rx="2" fill="none" stroke="#fff" strokeWidth="4" />
-                                        <rect x="22" y="22" width="6" height="6" fill="#222" /><rect x="92" y="22" width="6" height="6" fill="#222" /><rect x="22" y="92" width="6" height="6" fill="#222" />
-                                        <rect x="50" y="10" width="6" height="6" fill="#222" /><rect x="66" y="10" width="6" height="6" fill="#222" /><rect x="58" y="18" width="6" height="6" fill="#222" /><rect x="50" y="26" width="6" height="6" fill="#222" /><rect x="66" y="26" width="6" height="6" fill="#222" /><rect x="58" y="34" width="6" height="6" fill="#222" />
-                                        <rect x="10" y="50" width="6" height="6" fill="#222" /><rect x="18" y="50" width="6" height="6" fill="#222" /><rect x="34" y="50" width="6" height="6" fill="#222" /><rect x="50" y="50" width="6" height="6" fill="#222" /><rect x="66" y="50" width="6" height="6" fill="#222" />
-                                        <rect x="10" y="58" width="6" height="6" fill="#222" /><rect x="26" y="58" width="6" height="6" fill="#222" /><rect x="42" y="58" width="6" height="6" fill="#222" /><rect x="58" y="58" width="6" height="6" fill="#222" />
-                                        <rect x="10" y="66" width="6" height="6" fill="#222" /><rect x="18" y="66" width="6" height="6" fill="#222" /><rect x="34" y="66" width="6" height="6" fill="#222" /><rect x="50" y="66" width="6" height="6" fill="#222" /><rect x="66" y="66" width="6" height="6" fill="#222" />
-                                        <rect x="80" y="50" width="6" height="6" fill="#222" /><rect x="88" y="50" width="6" height="6" fill="#222" /><rect x="104" y="50" width="6" height="6" fill="#222" /><rect x="80" y="58" width="6" height="6" fill="#222" /><rect x="96" y="58" width="6" height="6" fill="#222" /><rect x="104" y="66" width="6" height="6" fill="#222" />
-                                        <rect x="80" y="80" width="6" height="6" fill="#222" /><rect x="96" y="80" width="6" height="6" fill="#222" /><rect x="104" y="80" width="6" height="6" fill="#222" /><rect x="88" y="88" width="6" height="6" fill="#222" /><rect x="80" y="96" width="6" height="6" fill="#222" /><rect x="96" y="96" width="6" height="6" fill="#222" /><rect x="104" y="96" width="6" height="6" fill="#222" /><rect x="80" y="104" width="6" height="6" fill="#222" /><rect x="88" y="104" width="6" height="6" fill="#222" />
-                                        <rect x="50" y="80" width="6" height="6" fill="#222" /><rect x="66" y="80" width="6" height="6" fill="#222" /><rect x="58" y="88" width="6" height="6" fill="#222" /><rect x="66" y="88" width="6" height="6" fill="#222" /><rect x="50" y="96" width="6" height="6" fill="#222" /><rect x="58" y="96" width="6" height="6" fill="#222" /><rect x="50" y="104" width="6" height="6" fill="#222" /><rect x="66" y="104" width="6" height="6" fill="#222" />
+                                        <rect x="10" y="10" width="30" height="30" rx="4" fill="#222"/><rect x="80" y="10" width="30" height="30" rx="4" fill="#222"/><rect x="10" y="80" width="30" height="30" rx="4" fill="#222"/>
+                                        <rect x="15" y="15" width="20" height="20" rx="2" fill="none" stroke="#fff" strokeWidth="4"/><rect x="85" y="15" width="20" height="20" rx="2" fill="none" stroke="#fff" strokeWidth="4"/><rect x="15" y="85" width="20" height="20" rx="2" fill="none" stroke="#fff" strokeWidth="4"/>
+                                        <rect x="22" y="22" width="6" height="6" fill="#222"/><rect x="92" y="22" width="6" height="6" fill="#222"/><rect x="22" y="92" width="6" height="6" fill="#222"/>
+                                        <rect x="50" y="10" width="6" height="6" fill="#222"/><rect x="66" y="10" width="6" height="6" fill="#222"/><rect x="58" y="18" width="6" height="6" fill="#222"/><rect x="50" y="26" width="6" height="6" fill="#222"/><rect x="66" y="26" width="6" height="6" fill="#222"/><rect x="58" y="34" width="6" height="6" fill="#222"/>
+                                        <rect x="10" y="50" width="6" height="6" fill="#222"/><rect x="18" y="50" width="6" height="6" fill="#222"/><rect x="34" y="50" width="6" height="6" fill="#222"/><rect x="50" y="50" width="6" height="6" fill="#222"/><rect x="66" y="50" width="6" height="6" fill="#222"/>
+                                        <rect x="10" y="58" width="6" height="6" fill="#222"/><rect x="26" y="58" width="6" height="6" fill="#222"/><rect x="42" y="58" width="6" height="6" fill="#222"/><rect x="58" y="58" width="6" height="6" fill="#222"/>
+                                        <rect x="10" y="66" width="6" height="6" fill="#222"/><rect x="18" y="66" width="6" height="6" fill="#222"/><rect x="34" y="66" width="6" height="6" fill="#222"/><rect x="50" y="66" width="6" height="6" fill="#222"/><rect x="66" y="66" width="6" height="6" fill="#222"/>
+                                        <rect x="80" y="50" width="6" height="6" fill="#222"/><rect x="88" y="50" width="6" height="6" fill="#222"/><rect x="104" y="50" width="6" height="6" fill="#222"/><rect x="80" y="58" width="6" height="6" fill="#222"/><rect x="96" y="58" width="6" height="6" fill="#222"/><rect x="104" y="66" width="6" height="6" fill="#222"/>
+                                        <rect x="80" y="80" width="6" height="6" fill="#222"/><rect x="96" y="80" width="6" height="6" fill="#222"/><rect x="104" y="80" width="6" height="6" fill="#222"/><rect x="88" y="88" width="6" height="6" fill="#222"/><rect x="80" y="96" width="6" height="6" fill="#222"/><rect x="96" y="96" width="6" height="6" fill="#222"/><rect x="104" y="96" width="6" height="6" fill="#222"/><rect x="80" y="104" width="6" height="6" fill="#222"/><rect x="88" y="104" width="6" height="6" fill="#222"/>
+                                        <rect x="50" y="80" width="6" height="6" fill="#222"/><rect x="66" y="80" width="6" height="6" fill="#222"/><rect x="58" y="88" width="6" height="6" fill="#222"/><rect x="66" y="88" width="6" height="6" fill="#222"/><rect x="50" y="96" width="6" height="6" fill="#222"/><rect x="58" y="96" width="6" height="6" fill="#222"/><rect x="50" y="104" width="6" height="6" fill="#222"/><rect x="66" y="104" width="6" height="6" fill="#222"/>
                                     </svg>
                                 </div>
                                 <div className="flex items-center gap-2">
@@ -393,6 +424,53 @@
         };
 
         // ============================================================
+        // CANCEL + TIMEOUT BUTTON (shared)
+        // ============================================================
+        const CancelButton = ({ timeLeft, onCancel }) => (
+            <button
+                onClick={onCancel}
+                className="flex items-center gap-2 rounded-xl transition-all"
+                style={{
+                    padding: '9px 16px',
+                    border: `1.5px solid ${timeLeft <= 10 ? '#fca5a5' : '#e5e7eb'}`,
+                    backgroundColor: timeLeft <= 10 ? '#FEF2F2' : 'white',
+                    cursor: 'pointer',
+                    transition: 'border-color 0.3s, background-color 0.3s',
+                }}
+            >
+                <svg viewBox="0 0 24 24" fill="none" stroke={timeLeft <= 10 ? '#ef4444' : '#9ca3af'}
+                     strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+                     style={{ width: 18, height: 18 }}>
+                    <circle cx="12" cy="12" r="10"/><path d="M12 6v6l3 3"/>
+                </svg>
+                <span className="font-display font-bold tabular-nums"
+                      style={{ fontSize: '1rem', color: timeLeft <= 10 ? '#ef4444' : '#6b7280' }}>
+                    {timeLeft}s
+                </span>
+                <div style={{ width: 1, height: 16, backgroundColor: timeLeft <= 10 ? '#fca5a5' : '#e2e8f0', margin: '0 2px' }} />
+                <span className="font-display font-bold uppercase tracking-wider"
+                      style={{ fontSize: '1rem', color: timeLeft <= 10 ? '#ef4444' : '#9ca3af' }}>
+                    Cancel
+                </span>
+            </button>
+        );
+
+        // ============================================================
+        // DOWNLOAD BUTTON (shared)
+        // ============================================================
+        const DownloadButton = ({ onClick }) => (
+            <button
+                onClick={onClick}
+                className="flex items-center gap-3 px-5 py-3 rounded-xl bg-white border border-gray-200 shadow-sm hover:bg-gray-50 transition-colors"
+            >
+                <IconQR style={{ width: 24, height: 24, color: TEAL, flexShrink: 0 }} />
+                <span className="font-body font-medium text-gray-600" style={{ fontSize: '1.03rem' }}>
+                    Get your USEFULL QR code
+                </span>
+            </button>
+        );
+
+        // ============================================================
         // MAIN APP
         // ============================================================
         const App = () => {
@@ -403,9 +481,21 @@
             const [successData, setSuccessData]             = useState(null);
             const [justScanned, setJustScanned]             = useState(false);
             const [showDownloadModal, setShowDownloadModal] = useState(false);
+            const [isPortrait, setIsPortrait]               = useState(() => window.innerHeight > window.innerWidth);
+
             const scannedCodesRef = useRef(new Set());
-            const audioCtxRef = useRef(null);
-            const dingBufferRef = useRef(null);
+            const audioCtxRef     = useRef(null);
+            const dingBufferRef   = useRef(null);
+
+            // Orientation detection
+            useEffect(() => {
+                const mq = window.matchMedia('(orientation: portrait)');
+                const handler = (e) => setIsPortrait(e.matches);
+                mq.addEventListener('change', handler);
+                return () => mq.removeEventListener('change', handler);
+            }, []);
+
+            // Audio unlock
             useEffect(() => {
                 const unlock = async () => {
                     if (audioCtxRef.current) return;
@@ -418,24 +508,25 @@
                     } catch (_) {}
                 };
                 document.addEventListener('touchstart', unlock, { once: true });
-                document.addEventListener('click', unlock, { once: true });
+                document.addEventListener('click',      unlock, { once: true });
                 return () => {
                     document.removeEventListener('touchstart', unlock);
-                    document.removeEventListener('click', unlock);
+                    document.removeEventListener('click',      unlock);
                 };
             }, []);
+
             const playDing = useCallback(() => {
                 if (!audioCtxRef.current || !dingBufferRef.current) return;
-                const source = audioCtxRef.current.createBufferSource();
-                source.buffer = dingBufferRef.current;
-                source.connect(audioCtxRef.current.destination);
-                source.start(0);
+                const src = audioCtxRef.current.createBufferSource();
+                src.buffer = dingBufferRef.current;
+                src.connect(audioCtxRef.current.destination);
+                src.start(0);
             }, []);
 
             const hasItems    = items.length > 0;
             const showTimeout = hasItems && status !== 'success';
 
-            // Timeout countdown
+            // Countdown timer
             useEffect(() => {
                 if (!showTimeout) { setTimeLeft(30); return; }
                 const timer = setInterval(() => {
@@ -461,7 +552,7 @@
                 setError(null);
                 setJustScanned(true);
                 setTimeout(() => setJustScanned(false), 1500);
-            }, []);
+            }, [playDing]);
 
             const handleScanUser = useCallback(() => {
                 if (items.length === 0) {
@@ -488,40 +579,117 @@
                 }
             }, [handleScanContainer, handleScanUser]);
 
+            const modals = (
+                <>
+                    <DownloadModal isOpen={showDownloadModal} onClose={() => setShowDownloadModal(false)} />
+                    <SuccessModal data={status === 'success' ? successData : null} onDone={handleCancel} />
+                </>
+            );
+
+            // ── PORTRAIT LAYOUT ──────────────────────────────────────
+            if (isPortrait) {
+                return (
+                    <div className="h-full w-full flex flex-col overflow-hidden select-none relative"
+                         style={{ backgroundColor: '#EEF2F3' }}>
+
+                        {/* Camera — top 47% */}
+                        <div className="relative shrink-0" style={{ flex: '0 0 47%' }}>
+                            <CameraBox isScanning={status !== 'success'} onQRResult={handleQRResult} isPortrait />
+                            <ErrorToast message={error} />
+                        </div>
+
+                        <div className="camera-content-divider shrink-0" />
+
+                        {/* Content — bottom section */}
+                        <div className="flex-1 flex flex-col overflow-hidden"
+                             style={{ padding: '12px 14px 10px 16px', minHeight: 0, gap: 10 }}>
+
+                            {/* Two-column main area */}
+                            <div className="flex-1 flex gap-3 overflow-hidden" style={{ minHeight: 0 }}>
+
+                                {/* Left: instructions */}
+                                <div className="flex-1 flex flex-col justify-center gap-3 overflow-hidden" style={{ minWidth: 0 }}>
+                                    <div>
+                                        <h2 className="font-display font-extrabold leading-tight"
+                                            style={{ color: TEAL, fontSize: '2.6rem' }}>
+                                            {hasItems ? 'Scan more containers' : 'Scan your containers'}
+                                        </h2>
+                                        <p className="font-body text-gray-500 mt-2 leading-snug"
+                                           style={{ fontSize: '1.15rem' }}>
+                                            {hasItems
+                                                ? 'Or scan your QR code to finish checkout'
+                                                : 'Hold each container in front of the camera'}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                {/* Right: count card */}
+                                {hasItems && status !== 'success' && (
+                                    <div className="shrink-0" style={{ width: '44%', alignSelf: 'center', paddingTop: 8, paddingBottom: 8 }}>
+                                        <CountCard count={items.length} justScanned={justScanned} />
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Bottom strip: logo + action */}
+                            <div className="shrink-0 flex items-center gap-3"
+                                 style={{ borderTop: '1px solid rgba(0,140,149,0.12)', paddingTop: 9 }}>
+                                <div className="flex flex-col items-start">
+                                    <UsefullLogo style={{ height: '2rem' }} className="w-auto" />
+                                    <p className="font-display font-bold uppercase tracking-[0.2em]"
+                                       style={{ color: TEAL, fontSize: '0.6rem', marginTop: 2 }}>
+                                        Checkout Station
+                                    </p>
+                                </div>
+
+                                <div className="ml-auto">
+                                    {hasItems && status !== 'success'
+                                        ? <CancelButton timeLeft={timeLeft} onCancel={handleCancel} />
+                                        : <DownloadButton onClick={() => setShowDownloadModal(true)} />
+                                    }
+                                </div>
+                            </div>
+                        </div>
+
+                        {modals}
+                    </div>
+                );
+            }
+
+            // ── LANDSCAPE LAYOUT ─────────────────────────────────────
             return (
-                <div
-                    className="h-full w-full flex overflow-hidden select-none relative"
-                    style={{ backgroundColor: '#EEF2F3', padding: '20px', gap: '20px' }}
-                >
-                    {/* LEFT: Camera — full height, capped at 50% width */}
+                <div className="h-full w-full flex overflow-hidden select-none relative"
+                     style={{ backgroundColor: '#EEF2F3', padding: '20px', gap: '20px' }}>
+
+                    {/* Left: Camera — full height, 50% width */}
                     <div className="relative shrink-0" style={{ height: '100%', width: '50%', maxWidth: '50%' }}>
-                        <CameraBox isScanning={status !== 'success'} onQRResult={handleQRResult} />
+                        <CameraBox isScanning={status !== 'success'} onQRResult={handleQRResult} isPortrait={false} />
                         <ErrorToast message={error} />
                     </div>
 
-                    {/* RIGHT: Three-zone column — logo top, content center, download bottom */}
+                    {/* Right: three-zone column */}
                     <div className="flex-1 flex flex-col min-w-0 px-4 pt-2 pb-5">
 
-                        {/* Logo — pinned to top, never moves */}
+                        {/* Logo — top */}
                         <div className="flex flex-col items-center pb-0">
                             <UsefullLogo style={{ height: '4.68rem' }} className="w-auto" />
                             {!hasItems && (
-                                <p className="font-display font-bold uppercase tracking-[0.22em] mt-1" style={{ color: TEAL, fontSize: '1.17rem' }}>
+                                <p className="font-display font-bold uppercase tracking-[0.22em] mt-1"
+                                   style={{ color: TEAL, fontSize: '1.17rem' }}>
                                     Checkout Station
                                 </p>
                             )}
                         </div>
 
-                        {/* Center zone — instruction + counter (cancel moved to bottom) */}
+                        {/* Center: instruction + counter */}
                         <div className="flex-1 flex flex-col items-center justify-center gap-6 overflow-hidden">
                             <div className="text-center">
-                                <h2
-                                    className="font-display font-extrabold leading-tight"
-                                    style={{ fontSize: '2.81rem', color: TEAL }}
-                                >
+                                <h2 className="font-display font-extrabold leading-tight"
+                                    style={{ fontSize: '2.81rem', color: TEAL }}>
                                     {hasItems ? 'Scan more containers' : 'Scan your containers'}
                                 </h2>
-                                <p className="font-body text-gray-500 mt-3 leading-relaxed" style={{ fontSize: '1.4rem' }}>
+                                <p className="font-body text-gray-500 mt-3 leading-relaxed"
+                                   style={{ fontSize: '1.4rem' }}>
                                     {hasItems
                                         ? 'Or scan your QR code to finish'
                                         : 'Hold each container in front of the camera'}
@@ -533,30 +701,16 @@
                             )}
                         </div>
 
-                        {/* Bottom — cancel (when scanning) OR download (when idle), always visible */}
+                        {/* Bottom: cancel or download */}
                         <div className="flex items-center justify-center gap-3 pt-2">
-                            {hasItems && status !== 'success' ? (
-                                <button
-                                    onClick={handleCancel}
-                                    className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-display font-bold uppercase tracking-wider border border-red-200 text-red-500 hover:bg-red-50 transition-colors" style={{ fontSize: '1.03rem' }}
-                                >
-                                    <IconX className="w-4 h-4" />
-                                    Cancel
-                                </button>
-                            ) : (
-                                <button
-                                    onClick={() => setShowDownloadModal(true)}
-                                    className="flex items-center gap-3 px-5 py-3 rounded-xl bg-white border border-gray-200 shadow-sm hover:bg-gray-50 transition-colors"
-                                >
-                                    <img src="../app-download.png" alt="" className="w-7 h-7 shrink-0" style={{ filter: `brightness(0) saturate(100%) invert(36%) sepia(85%) saturate(500%) hue-rotate(150deg)` }} />
-                                    <span className="font-body font-medium text-gray-600" style={{ fontSize: '1.03rem' }}>Download the app to get your USEFULL QR code!</span>
-                                </button>
-                            )}
+                            {hasItems && status !== 'success'
+                                ? <CancelButton timeLeft={timeLeft} onCancel={handleCancel} />
+                                : <DownloadButton onClick={() => setShowDownloadModal(true)} />
+                            }
                         </div>
                     </div>
 
-                    <DownloadModal isOpen={showDownloadModal} onClose={() => setShowDownloadModal(false)} />
-                    <SuccessModal data={status === 'success' ? successData : null} onDone={handleCancel} />
+                    {modals}
                 </div>
             );
         };
