@@ -80,8 +80,8 @@
         // ============================================================
         // ICONS
         // ============================================================
-        const IconX = ({ className }) => (
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
+        const IconX = ({ className, style, strokeWidth = "2.5" }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" className={className} style={style}>
                 <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
             </svg>
         );
@@ -265,37 +265,48 @@
         const CountCard = ({ count, justScanned }) => (
             <div
                 className="w-full bg-white rounded-2xl border border-gray-100 shadow-lg flex flex-col items-center justify-center"
-                style={{ animation: 'scaleUp 0.4s cubic-bezier(0.16, 1, 0.3, 1)', padding: '20px 12px', gap: 2 }}
+                style={{ animation: 'scaleUp 0.4s cubic-bezier(0.16, 1, 0.3, 1)', padding: '20px 12px', gap: 2, overflow: 'visible' }}
             >
                 <span className="font-display font-bold uppercase text-center"
                       style={{ color: TEAL, fontSize: '1rem', letterSpacing: '0.12em' }}>
                     Ready for Checkout
                 </span>
 
-                <div style={{ animation: justScanned ? 'countPop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1)' : 'none' }} key={count}>
+                {/* Number with "Added" pill floating to its right — no reserved space */}
+                <div style={{ position: 'relative', display: 'inline-block' }} key={count}>
                     <span className="font-display font-black text-slate-800 leading-none"
-                          style={{ fontSize: '7rem', lineHeight: 1 }}>
+                          style={{ fontSize: '7rem', lineHeight: 1,
+                                   display: 'block',
+                                   animation: justScanned ? 'countPop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1)' : 'none' }}>
                         {count}
                     </span>
+                    {/* +1 badge — left of number, vertically centered */}
+                    <div style={{
+                        position: 'absolute',
+                        right: 'calc(100% + 0.6rem)',
+                        top: '50%',
+                        width: '3rem',
+                        height: '3rem',
+                        borderRadius: '50%',
+                        backgroundColor: TEAL,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        transform: `translateY(-50%) scale(${justScanned ? 1 : 0})`,
+                        opacity: justScanned ? 1 : 0,
+                        transition: 'opacity 0.25s ease, transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1)',
+                        pointerEvents: 'none',
+                        boxShadow: `0 2px 8px ${TEAL}55`,
+                    }}>
+                        <span className="font-display font-black"
+                              style={{ color: 'white', fontSize: '1.1rem', lineHeight: 1 }}>+1</span>
+                    </div>
                 </div>
 
                 <span className="font-body font-semibold text-gray-400 uppercase tracking-wider"
                       style={{ fontSize: '1.4rem' }}>
                     Container{count !== 1 ? 's' : ''}
                 </span>
-
-                <div style={{ marginTop: 10, opacity: justScanned ? 1 : 0,
-                              transform: justScanned ? 'translateY(0)' : 'translateY(4px)',
-                              transition: 'all 0.3s ease' }}>
-                    <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full"
-                         style={{ backgroundColor: TEAL_LIGHT, border: `1px solid ${TEAL}30` }}>
-                        <IconCheck style={{ color: TEAL, width: 15, height: 15,
-                                           strokeDasharray: 24,
-                                           animation: justScanned ? 'checkDraw 0.3s ease-out forwards' : 'none' }} />
-                        <span className="font-display font-black uppercase tracking-wider"
-                              style={{ color: TEAL, fontSize: '0.85rem' }}>Added</span>
-                    </div>
-                </div>
             </div>
         );
 
@@ -424,6 +435,132 @@
         };
 
         // ============================================================
+        // CLOSE BUTTON (subtle circle X)
+        // ============================================================
+        const CloseButton = ({ onPress }) => (
+            <button
+                onClick={onPress}
+                style={{
+                    width: 30, height: 30, borderRadius: '50%', flexShrink: 0,
+                    backgroundColor: '#EEF2F3',
+                    border: '1px solid rgba(0,0,0,0.18)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    cursor: 'pointer',
+                }}
+            >
+                <IconX style={{ width: 10, height: 10, color: '#c8d0d8' }} strokeWidth="1.5" />
+            </button>
+        );
+
+        // ============================================================
+        // ACCESS CODE MODAL
+        // ============================================================
+        const AccessCodeModal = ({ isOpen, onClose }) => {
+            const [code, setCode]         = React.useState('');
+            const [showCode, setShowCode] = React.useState(false);
+            const inputRef                = React.useRef(null);
+
+            React.useEffect(() => {
+                if (isOpen) { setCode(''); setTimeout(() => inputRef.current?.focus(), 100); }
+            }, [isOpen]);
+
+            if (!isOpen) return null;
+
+            const handleChange = (e) => {
+                const val = e.target.value.replace(/\D/g, '').slice(0, 4);
+                setCode(val);
+            };
+
+            return (
+                <div className="absolute inset-0 z-50 flex items-center justify-center"
+                     style={{ backgroundColor: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(8px)',
+                              WebkitBackdropFilter: 'blur(8px)', animation: 'fadeIn 0.2s ease-out' }}
+                     onClick={onClose}>
+                    <div className="bg-white rounded-3xl shadow-2xl w-full mx-6 overflow-hidden"
+                         style={{ animation: 'scaleUp 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)', maxWidth: 420 }}
+                         onClick={e => e.stopPropagation()}>
+
+                        {/* Title */}
+                        <div style={{ padding: '28px 28px 20px' }}>
+                            <h2 className="font-display font-extrabold text-center"
+                                style={{ color: '#1e293b', fontSize: '1.2rem', lineHeight: 1.3 }}>
+                                Enter the checkout station access code
+                            </h2>
+                        </div>
+
+                        {/* Input */}
+                        <div style={{ padding: '0 28px 24px' }}>
+                            <div className="relative">
+                                <input
+                                    ref={inputRef}
+                                    type={showCode ? 'text' : 'password'}
+                                    inputMode="numeric"
+                                    pattern="[0-9]*"
+                                    maxLength={4}
+                                    value={code}
+                                    onChange={handleChange}
+                                    placeholder="Enter code here"
+                                    className="w-full font-body"
+                                    style={{
+                                        padding: '14px 48px 14px 16px',
+                                        border: `1.5px solid ${code.length === 4 ? TEAL : '#e2e8f0'}`,
+                                        borderRadius: 12,
+                                        fontSize: '1.1rem',
+                                        outline: 'none',
+                                        letterSpacing: code.length && !showCode ? '0.4em' : 'normal',
+                                        transition: 'border-color 0.2s',
+                                    }}
+                                />
+                                <button
+                                    onClick={() => setShowCode(v => !v)}
+                                    style={{ position: 'absolute', right: 14, top: '50%',
+                                             transform: 'translateY(-50%)', background: 'none',
+                                             border: 'none', cursor: 'pointer', padding: 4, color: '#94a3b8' }}
+                                >
+                                    {showCode ? (
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 20, height: 20 }}>
+                                            <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/>
+                                        </svg>
+                                    ) : (
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 20, height: 20 }}>
+                                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+                                        </svg>
+                                    )}
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Divider + buttons */}
+                        <div style={{ borderTop: '1px solid #f1f5f9' }}>
+                            <div className="flex">
+                                <button
+                                    onClick={onClose}
+                                    className="flex-1 font-display font-bold uppercase tracking-wider"
+                                    style={{ padding: '18px', fontSize: '0.9rem', color: '#94a3b8',
+                                             background: 'none', border: 'none', cursor: 'pointer' }}
+                                >
+                                    Cancel
+                                </button>
+                                <div style={{ width: 1, backgroundColor: '#f1f5f9' }} />
+                                <button
+                                    onClick={code.length === 4 ? onClose : undefined}
+                                    className="flex-1 font-display font-bold uppercase tracking-wider"
+                                    style={{ padding: '18px', fontSize: '0.9rem',
+                                             color: code.length === 4 ? TEAL : '#cbd5e1',
+                                             background: 'none', border: 'none',
+                                             cursor: code.length === 4 ? 'pointer' : 'default',
+                                             transition: 'color 0.2s' }}
+                                >
+                                    Submit
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // ============================================================
         // CANCEL + TIMEOUT BUTTON (shared)
         // ============================================================
         const CancelButton = ({ timeLeft, onCancel }) => (
@@ -481,6 +618,7 @@
             const [successData, setSuccessData]             = useState(null);
             const [justScanned, setJustScanned]             = useState(false);
             const [showDownloadModal, setShowDownloadModal] = useState(false);
+            const [showAccessModal, setShowAccessModal]     = useState(false);
             const [isPortrait, setIsPortrait]               = useState(() => window.innerHeight > window.innerWidth);
 
             const scannedCodesRef = useRef(new Set());
@@ -582,6 +720,7 @@
             const modals = (
                 <>
                     <DownloadModal isOpen={showDownloadModal} onClose={() => setShowDownloadModal(false)} />
+                    <AccessCodeModal isOpen={showAccessModal} onClose={() => { handleCancel(); setShowAccessModal(false); }} />
                     <SuccessModal data={status === 'success' ? successData : null} onDone={handleCancel} />
                 </>
             );
@@ -604,40 +743,49 @@
                         <div className="flex-1 flex flex-col overflow-hidden"
                              style={{ padding: '12px 14px 10px 16px', minHeight: 0, gap: 10 }}>
 
-                            {/* Two-column main area */}
-                            <div className="flex-1 flex gap-3 overflow-hidden" style={{ minHeight: 0 }}>
-
-                                {/* Left: instructions */}
-                                <div className="flex-1 flex flex-col justify-center gap-3 overflow-hidden" style={{ minWidth: 0 }}>
-                                    <div>
+                            {/* Main content area — centered idle, two-column when scanning */}
+                            <div className="flex-1 overflow-hidden" style={{ minHeight: 0 }}>
+                                {!hasItems ? (
+                                    /* IDLE: text centered H+V, full width */
+                                    <div className="h-full flex flex-col items-center justify-center text-center"
+                                         style={{ padding: '0 8px' }}>
                                         <h2 className="font-display font-extrabold leading-tight"
-                                            style={{ color: TEAL, fontSize: '2.6rem' }}>
-                                            {hasItems ? 'Scan more containers' : 'Scan your containers'}
+                                            style={{ color: TEAL, fontSize: '2.8rem' }}>
+                                            Scan your containers
                                         </h2>
                                         <p className="font-body text-gray-500 mt-2 leading-snug"
                                            style={{ fontSize: '1.15rem' }}>
-                                            {hasItems
-                                                ? 'Or scan your QR code to finish checkout'
-                                                : 'Hold each container in front of the camera'}
+                                            Hold each container in front of the camera
                                         </p>
                                     </div>
-                                </div>
-
-                                {/* Right: count card */}
-                                {hasItems && status !== 'success' && (
-                                    <div className="shrink-0" style={{ width: '44%', alignSelf: 'center', paddingTop: 8, paddingBottom: 8 }}>
-                                        <CountCard count={items.length} justScanned={justScanned} />
+                                ) : status !== 'success' && (
+                                    /* SCANNING: text centered at top, count card centered at bottom */
+                                    <div className="h-full flex flex-col items-center justify-between" style={{ padding: '4px 0 8px' }}>
+                                        <div className="text-center" style={{ padding: '0 8px' }}>
+                                            <h2 className="font-display font-extrabold leading-tight"
+                                                style={{ color: TEAL, fontSize: '2.8rem' }}>
+                                                Scan more containers
+                                            </h2>
+                                            <p className="font-body text-gray-500 mt-2 leading-snug"
+                                               style={{ fontSize: '1.15rem' }}>
+                                                Or scan your USEFULL QR code to finish checkout
+                                            </p>
+                                        </div>
+                                        <div style={{ width: '58%' }}>
+                                            <CountCard count={items.length} justScanned={justScanned} />
+                                        </div>
                                     </div>
                                 )}
                             </div>
 
-                            {/* Bottom strip: logo + action */}
+                            {/* Bottom strip: close + logo + action */}
                             <div className="shrink-0 flex items-center gap-3"
-                                 style={{ borderTop: '1px solid rgba(0,140,149,0.12)', paddingTop: 9 }}>
+                                 style={{ borderTop: '1px solid rgba(0,140,149,0.12)', paddingTop: 13, paddingBottom: 4 }}>
+                                <CloseButton onPress={() => setShowAccessModal(true)} />
                                 <div className="flex flex-col items-start">
-                                    <UsefullLogo style={{ height: '2rem' }} className="w-auto" />
+                                    <UsefullLogo style={{ height: '3rem' }} className="w-auto" />
                                     <p className="font-display font-bold uppercase tracking-[0.2em]"
-                                       style={{ color: TEAL, fontSize: '0.6rem', marginTop: 2 }}>
+                                       style={{ color: TEAL, fontSize: '0.9rem', marginTop: '-0.6rem', paddingLeft: '0.91rem' }}>
                                         Checkout Station
                                     </p>
                                 </div>
@@ -660,6 +808,11 @@
             return (
                 <div className="h-full w-full flex overflow-hidden select-none relative"
                      style={{ backgroundColor: '#EEF2F3', padding: '20px', gap: '20px' }}>
+
+                    {/* Close button — top right */}
+                    <div style={{ position: 'absolute', top: 16, right: 16, zIndex: 30 }}>
+                        <CloseButton onPress={() => setShowAccessModal(true)} />
+                    </div>
 
                     {/* Left: Camera — full height, 50% width */}
                     <div className="relative shrink-0" style={{ height: '100%', width: '50%', maxWidth: '50%' }}>
@@ -691,7 +844,7 @@
                                 <p className="font-body text-gray-500 mt-3 leading-relaxed"
                                    style={{ fontSize: '1.4rem' }}>
                                     {hasItems
-                                        ? 'Or scan your QR code to finish'
+                                        ? 'Or scan your USEFULL QR code to finish checkout'
                                         : 'Hold each container in front of the camera'}
                                 </p>
                             </div>
