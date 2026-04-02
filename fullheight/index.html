@@ -764,7 +764,7 @@
                                         <div className="text-center" style={{ padding: '0 8px' }}>
                                             <h2 className="font-display font-extrabold leading-tight"
                                                 style={{ color: TEAL, fontSize: '2.8rem' }}>
-                                                Now scan your QR code
+                                                Now scan your{' '}<span style={{ whiteSpace: 'nowrap' }}>USEFULL ID</span>
                                             </h2>
                                             <p className="font-display font-bold mt-2 leading-snug"
                                                style={{ fontSize: '1.5rem', color: '#6B7280' }}>
@@ -839,7 +839,7 @@
                             <div className="text-center">
                                 <h2 className="font-display font-extrabold leading-tight"
                                     style={{ fontSize: '2.81rem', color: TEAL }}>
-                                    {hasItems ? 'Now scan your QR code' : 'Scan your containers'}
+                                    {hasItems ? <>Now scan your{' '}<span style={{ whiteSpace: 'nowrap' }}>USEFULL ID</span></> : 'Scan your containers'}
                                 </h2>
                                 <p className={hasItems ? "font-display font-bold mt-3 leading-relaxed" : "font-body text-gray-500 mt-3 leading-relaxed"}
                                    style={{ fontSize: hasItems ? '1.6rem' : '1.4rem', color: hasItems ? '#6B7280' : undefined }}>
