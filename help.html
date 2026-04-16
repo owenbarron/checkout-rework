@@ -35,6 +35,22 @@
             flex-shrink: 0;
         }
         .qr-card img { image-rendering: pixelated; }
+        .qr-nav-btn {
+            border: 1px solid #dbe3ea;
+            background: white;
+            color: #64748b;
+            transition: all 0.18s ease;
+        }
+        .qr-nav-btn:hover {
+            border-color: #008C95;
+            color: #008C95;
+        }
+        .qr-nav-btn.active {
+            background: #008C95;
+            border-color: #008C95;
+            color: white;
+            box-shadow: 0 10px 24px rgba(0, 140, 149, 0.18);
+        }
     </style>
 </head>
 <body class="bg-gray-50 text-gray-800 font-body">
@@ -42,7 +58,7 @@
     <!-- Header -->
     <header style="background: #008C95;">
         <div class="max-w-4xl mx-auto px-6 py-8">
-            <img src="USEFULL-Logo-Registered_KnockOut.svg" alt="USEFULL" class="h-9 w-auto">
+            <img src="images/USEFULL-Logo-Registered_KnockOut.svg" alt="USEFULL" class="h-9 w-auto">
             <p class="text-white/70 font-body mt-2 text-base">Checkout Kiosk — Stakeholder Review Guide</p>
         </div>
     </header>
@@ -462,12 +478,25 @@
         </section>
 
         <!-- QR codes -->
-        <section>
+        <section id="test-qr-codes">
             <h2 class="font-display font-bold text-2xl text-gray-900 mb-2">Test QR codes</h2>
             <p class="text-gray-500 text-sm mb-6">
                 Save these to your camera roll, or open this page on one device and scan from another.
                 You can scan all three cup codes in a single session before checking out.
             </p>
+
+            <div class="flex flex-wrap items-center gap-3 mb-6">
+                <a href="#qr-modal" class="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-display font-bold tracking-wide shadow-sm transition-colors"
+                   style="background: #008C95; color: white;">
+                    Open QR modal
+                </a>
+                <a href="#test-qr-codes" class="text-sm font-medium hover:underline" style="color: #008C95;">
+                    Link to this section
+                </a>
+                <a href="#qr-modal" class="text-sm font-medium hover:underline" style="color: #008C95;">
+                    Link directly to the modal
+                </a>
+            </div>
 
             <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
                 <div class="qr-card rounded-2xl border border-gray-200 bg-white p-4 shadow-sm flex flex-col items-center gap-3">
@@ -501,6 +530,46 @@
             </div>
         </section>
 
+        <div id="qrModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 sm:p-6"
+             style="background: rgba(0,0,0,0.68); backdrop-filter: blur(6px);">
+            <div class="relative w-full max-w-4xl rounded-[28px] border border-white/60 bg-white shadow-2xl overflow-hidden">
+                <div class="border-b border-gray-100 px-5 py-4 sm:px-6 sm:py-5">
+                    <div class="flex items-start justify-between gap-4">
+                        <div>
+                            <div class="text-xs font-display font-bold uppercase tracking-[0.22em] text-gray-400 mb-1">Test QR codes</div>
+                            <h3 id="qrModalTitle" class="font-display font-bold text-xl text-gray-900">Container 1</h3>
+                            <p id="qrModalDescription" class="text-sm text-gray-500 mt-1">Use this sample container code for scan testing.</p>
+                        </div>
+                        <button onclick="closeQrModal()"
+                            class="w-10 h-10 rounded-full border border-gray-200 bg-white text-gray-400 hover:text-gray-600 hover:border-gray-300 transition-colors flex items-center justify-center shrink-0">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-4">
+                        <button class="qr-nav-btn active rounded-xl px-3 py-2.5 text-sm font-display font-bold" data-qr-target="container1" onclick="showQrCode('container1')">Container 1</button>
+                        <button class="qr-nav-btn rounded-xl px-3 py-2.5 text-sm font-display font-bold" data-qr-target="container2" onclick="showQrCode('container2')">Container 2</button>
+                        <button class="qr-nav-btn rounded-xl px-3 py-2.5 text-sm font-display font-bold" data-qr-target="container3" onclick="showQrCode('container3')">Container 3</button>
+                        <button class="qr-nav-btn rounded-xl px-3 py-2.5 text-sm font-display font-bold" data-qr-target="user" onclick="showQrCode('user')">User</button>
+                    </div>
+                </div>
+
+                <div class="p-5 sm:p-8">
+                    <div class="rounded-[24px] border border-gray-100 bg-gray-50 p-5 sm:p-8">
+                        <div class="flex flex-col items-center">
+                            <img id="qrModalImage" src="qr-codes/cup-id-21788.png" alt="Cup QR code — ID 21788"
+                                 class="w-full max-w-md rounded-2xl bg-white p-3 shadow-sm" style="image-rendering: pixelated;">
+                            <div class="text-center mt-5">
+                                <p id="qrModalLabel" class="font-display font-bold text-lg text-gray-900">Cup #21788</p>
+                                <p id="qrModalMeta" class="text-sm text-gray-500 mt-1">Container</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Notes -->
         <section class="rounded-2xl border border-amber-100 bg-amber-50 p-6">
             <h3 class="font-display font-semibold text-amber-800 mb-2">A few notes</h3>
@@ -519,6 +588,97 @@
             USEFULL Checkout Kiosk &mdash; Stakeholder review build &mdash; March 2026
         </div>
     </footer>
+
+    <script>
+        const qrCodeConfig = {
+            container1: {
+                title: 'Container 1',
+                description: 'Use this sample container code for scan testing.',
+                src: 'qr-codes/cup-id-21788.png',
+                alt: 'Cup QR code — ID 21788',
+                label: 'Cup #21788',
+                meta: 'Container',
+            },
+            container2: {
+                title: 'Container 2',
+                description: 'A second valid container code for multi-container sessions.',
+                src: 'qr-codes/cup-id-21789.png',
+                alt: 'Cup QR code — ID 21789',
+                label: 'Cup #21789',
+                meta: 'Container',
+            },
+            container3: {
+                title: 'Container 3',
+                description: 'A third valid container code for testing 3-container flows.',
+                src: 'qr-codes/cup-id-91282.png',
+                alt: 'Cup QR code — ID 91282',
+                label: 'Cup #91282',
+                meta: 'Container',
+            },
+            user: {
+                title: 'User',
+                description: 'Scan this last to complete checkout for the current session.',
+                src: 'qr-codes/user-24638.png',
+                alt: 'User QR code — ID 24638',
+                label: 'User #24638',
+                meta: 'Scan last to check out',
+            },
+        };
+
+        function showQrCode(key) {
+            const config = qrCodeConfig[key];
+            if (!config) return;
+
+            document.getElementById('qrModalTitle').textContent = config.title;
+            document.getElementById('qrModalDescription').textContent = config.description;
+
+            const image = document.getElementById('qrModalImage');
+            image.src = config.src;
+            image.alt = config.alt;
+
+            document.getElementById('qrModalLabel').textContent = config.label;
+            document.getElementById('qrModalMeta').textContent = config.meta;
+
+            document.querySelectorAll('[data-qr-target]').forEach((button) => {
+                button.classList.toggle('active', button.dataset.qrTarget === key);
+            });
+        }
+
+        function openQrModal(key = 'container1') {
+            showQrCode(key);
+            const modal = document.getElementById('qrModal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            if (window.location.hash !== '#qr-modal') {
+                history.replaceState(null, '', '#qr-modal');
+            }
+        }
+
+        function closeQrModal() {
+            const modal = document.getElementById('qrModal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            if (window.location.hash === '#qr-modal') {
+                history.replaceState(null, '', '#test-qr-codes');
+            }
+        }
+
+        document.getElementById('qrModal').addEventListener('click', function(e) {
+            if (e.target === this) closeQrModal();
+        });
+
+        window.addEventListener('hashchange', function() {
+            if (window.location.hash === '#qr-modal') {
+                openQrModal();
+            } else {
+                closeQrModal();
+            }
+        });
+
+        if (window.location.hash === '#qr-modal') {
+            openQrModal();
+        }
+    </script>
 
 </body>
 </html>
