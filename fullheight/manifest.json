@@ -2,15 +2,15 @@
   "name": "USEFULL Checkout Kiosk (Full Height)",
   "short_name": "USEFULL C",
   "description": "Scan and check out reusable containers",
-  "start_url": "/checkout-rework/fullheight/",
-  "scope": "/checkout-rework/fullheight/",
+  "start_url": "./",
+  "scope": "./",
   "display": "standalone",
   "orientation": "landscape",
   "theme_color": "#ffffff",
   "background_color": "#eef2f3",
   "icons": [
     {
-      "src": "../USEFULL-Icon-Registered_Color.svg",
+      "src": "../images/USEFULL-Icon-Registered_Color.svg",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any"

@@ -1,11 +1,12 @@
-const CACHE_NAME = 'usefull-kiosk-fullheight-v1';
+const CACHE_NAME = 'usefull-kiosk-fullheight-v2';
 const ASSETS = [
-    '/checkout-rework/fullheight/',
-    '/checkout-rework/fullheight/index.html',
-    '/checkout-rework/fullheight/manifest.json',
-    '/checkout-rework/USEFULL-Icon-Registered_Color.svg',
-    '/checkout-rework/USEFULL-Logo-Registered_KnockOut.svg',
-    '/checkout-rework/app-download.png',
+    './',
+    './index.html',
+    './manifest.json',
+    '../images/USEFULL-Icon-Registered_Color.svg',
+    '../sounds/successful-scan.m4a',
+    '../sounds/checkout-complete.mp3',
+    '../sounds/error.mp3',
 ];
 
 self.addEventListener('install', (event) => {

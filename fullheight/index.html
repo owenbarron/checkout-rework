@@ -11,8 +11,8 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="USEFULL">
-    <link rel="apple-touch-icon" href="../USEFULL-Icon-Registered_Color.svg">
-    <link rel="icon" type="image/svg+xml" href="../USEFULL-Icon-Registered_Color.svg">
+    <link rel="apple-touch-icon" href="../images/USEFULL-Icon-Registered_Color.svg">
+    <link rel="icon" type="image/svg+xml" href="../images/USEFULL-Icon-Registered_Color.svg">
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -76,6 +76,13 @@
         // ============================================================
         const TEAL       = '#008C95';
         const TEAL_LIGHT = '#E6F4F5';
+        const GOLD       = '#D69A2D';
+        const PARTIAL_CHECKOUT_NAMES = [
+            'Dubious Almond Giraffe',
+            'Frivolous Violet Flamingo',
+            'Curious Silver Otter',
+            'Brisk Amber Pelican',
+        ];
 
         // ============================================================
         // ICONS
@@ -93,6 +100,18 @@
         const IconAlert = ({ className }) => (
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
                 <circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/>
+            </svg>
+        );
+        const IconExclamation = ({ className, style, color = GOLD }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className={className} style={style}>
+                <rect x="10.2" y="3.2" width="3.6" height="13.2" rx="1.8" fill={color}/>
+                <circle cx="12" cy="20" r="2.1" fill={color}/>
+            </svg>
+        );
+        const IconSettings = ({ className, style }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className={className} style={style}>
+                <circle cx="12" cy="12" r="3.3"/>
+                <path d="M19.4 15a1 1 0 0 0 .2 1.1l.1.1a1.2 1.2 0 0 1 0 1.7l-1.6 1.6a1.2 1.2 0 0 1-1.7 0l-.1-.1a1 1 0 0 0-1.1-.2 1 1 0 0 0-.6.9V20a1.2 1.2 0 0 1-1.2 1.2h-2.3A1.2 1.2 0 0 1 10 20v-.2a1 1 0 0 0-.6-.9 1 1 0 0 0-1.1.2l-.1.1a1.2 1.2 0 0 1-1.7 0l-1.6-1.6a1.2 1.2 0 0 1 0-1.7l.1-.1a1 1 0 0 0 .2-1.1 1 1 0 0 0-.9-.6H4a1.2 1.2 0 0 1-1.2-1.2v-2.3A1.2 1.2 0 0 1 4 9.4h.2a1 1 0 0 0 .9-.6 1 1 0 0 0-.2-1.1l-.1-.1a1.2 1.2 0 0 1 0-1.7l1.6-1.6a1.2 1.2 0 0 1 1.7 0l.1.1a1 1 0 0 0 1.1.2 1 1 0 0 0 .6-.9V4A1.2 1.2 0 0 1 11.1 2.8h2.3A1.2 1.2 0 0 1 14.6 4v.2a1 1 0 0 0 .6.9 1 1 0 0 0 1.1-.2l.1-.1a1.2 1.2 0 0 1 1.7 0l1.6 1.6a1.2 1.2 0 0 1 0 1.7l-.1.1a1 1 0 0 0-.2 1.1 1 1 0 0 0 .9.6h.2A1.2 1.2 0 0 1 21.2 11v2.3a1.2 1.2 0 0 1-1.2 1.2h-.2a1 1 0 0 0-.9.6z"/>
             </svg>
         );
         const IconQR = ({ style }) => (
@@ -328,32 +347,160 @@
         };
 
         // ============================================================
-        // SUCCESS MODAL
+        // OUTCOME MODAL
         // ============================================================
-        const SuccessModal = ({ data, onDone }) => {
+        const Pill = ({ children }) => (
+            <span style={{
+                display: 'inline-block',
+                background: '#fff',
+                color: GOLD,
+                fontWeight: 500,
+                fontSize: '0.9rem',
+                padding: '0.3rem 0.75rem',
+                borderRadius: '999px',
+                whiteSpace: 'nowrap',
+                fontFamily: '"DM Sans", sans-serif',
+                letterSpacing: '-0.005em',
+            }}>{children}</span>
+        );
+
+        const AlertText = ({ user, count, align = 'left' }) => (
+            <div style={{
+                color: '#fff',
+                fontWeight: 500,
+                fontSize: '0.98rem',
+                fontFamily: '"DM Sans", sans-serif',
+                lineHeight: 1.4,
+                textAlign: align,
+            }}>
+                {count} container{count !== 1 ? 's' : ''} already checked out to {user}
+            </div>
+        );
+
+        const PillRow = ({ names, totalCount = names.length, align = 'flex-start' }) => (
+            <div style={{
+                display: 'flex',
+                flexWrap: 'wrap',
+                gap: '0.45rem',
+                alignItems: 'center',
+                justifyContent: align,
+                marginTop: '0.55rem',
+            }}>
+                {totalCount <= 2
+                    ? names.map(name => <Pill key={name}>{name}</Pill>)
+                    : (
+                        <>
+                            <Pill>{names[0]}</Pill>
+                            <span style={{ color: '#fff', fontWeight: 500, fontSize: '0.9rem', opacity: 0.9 }}>
+                                and {totalCount - 1} more
+                            </span>
+                        </>
+                    )}
+            </div>
+        );
+
+        const GoldBase = ({ children, style = {} }) => (
+            <div style={{
+                background: GOLD,
+                borderRadius: '0.85rem',
+                padding: '0.9rem 1.1rem',
+                boxShadow: '0 10px 30px rgba(0,0,0,0.25)',
+                position: 'relative',
+                ...style,
+            }}>
+                {children}
+            </div>
+        );
+
+        const PartialWarningCard = ({ user, rejectedCount, rejectedNames }) => (
+            <div style={{ position: 'relative', paddingTop: '1.4rem' }}>
+                <div style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: '50%',
+                    transform: 'translateX(-50%)',
+                    width: '2.85rem',
+                    height: '2.85rem',
+                    background: '#fff',
+                    borderRadius: '50%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    boxShadow: '0 8px 18px rgba(0,0,0,0.28)',
+                    zIndex: 2,
+                }}>
+                    <IconExclamation style={{ width: 24, height: 24 }} color={GOLD} />
+                </div>
+                <GoldBase style={{ padding: 'calc(1.65rem + 10px) 1.1rem 1.15rem', textAlign: 'center' }}>
+                    <AlertText user={user} count={rejectedCount} align="center" />
+                    <PillRow names={rejectedNames} totalCount={rejectedCount} align="center" />
+                </GoldBase>
+            </div>
+        );
+
+        const SuccessCard = ({ data, onDone }) => (
+            <div className="bg-white rounded-3xl shadow-2xl w-full overflow-hidden"
+                 style={{ maxWidth: '36.4rem' }}>
+                <div className="p-10 text-center" style={{ backgroundColor: TEAL }}>
+                    <div className="w-32 h-32 bg-white rounded-full flex items-center justify-center mx-auto mb-8 shadow-xl"
+                         style={{ animation: 'pulseGlow 2s ease-in-out infinite' }}>
+                        <IconCheck className="w-16 h-16" style={{ color: TEAL }} />
+                    </div>
+                    <h2 className="text-white font-display text-4xl font-extrabold mb-3">Checkout Complete!</h2>
+                    <p className="text-white/80 font-body text-xl mb-10 leading-relaxed">
+                        <span className="font-bold text-white text-3xl">{data.count}</span> container{data.count > 1 ? 's' : ''} checked out to<br/>
+                        <span className="font-bold text-white text-2xl border-b-2 border-white/30 pb-0.5">{data.user}</span>
+                    </p>
+                    <button onClick={onDone}
+                            className="w-full py-5 rounded-xl font-display font-bold text-xl uppercase tracking-wider shadow-lg bg-white hover:bg-gray-50 transition-colors"
+                            style={{ color: TEAL }}>
+                        Done
+                    </button>
+                </div>
+            </div>
+        );
+
+        const FullRejectionCard = ({ data, onDone }) => (
+            <div className="bg-white rounded-3xl shadow-2xl w-full overflow-hidden"
+                 style={{ maxWidth: '36.4rem' }}>
+                <div className="p-10 text-center" style={{ backgroundColor: GOLD }}>
+                    <div className="w-32 h-32 bg-white rounded-full flex items-center justify-center mx-auto mb-8 shadow-xl">
+                        <IconExclamation style={{ width: 56, height: 56 }} color={GOLD} />
+                    </div>
+                    <h2 className="text-white font-display text-4xl font-extrabold mb-3">Already Checked Out!</h2>
+                    <p className="text-white/85 font-body text-xl mb-10 leading-relaxed">
+                        <span className="font-bold text-white text-3xl">{data.count}</span> container{data.count > 1 ? 's' : ''} already checked out to<br/>
+                        <span className="font-bold text-white text-2xl border-b-2 border-white/30 pb-0.5">{data.user}</span>
+                    </p>
+                    <button onClick={onDone}
+                            className="w-full py-5 rounded-xl font-display font-bold text-xl uppercase tracking-wider shadow-lg bg-white hover:bg-gray-50 transition-colors"
+                            style={{ color: GOLD }}>
+                        Done
+                    </button>
+                </div>
+            </div>
+        );
+
+        const OutcomeModal = ({ data, onDone }) => {
             if (!data) return null;
             return (
                 <div className="absolute inset-0 z-50 flex items-center justify-center"
                      style={{ backgroundColor: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(8px)',
                               WebkitBackdropFilter: 'blur(8px)', animation: 'fadeIn 0.2s ease-out' }}>
-                    <div className="bg-white rounded-3xl shadow-2xl w-full mx-6 overflow-hidden"
+                    <div className="w-full mx-6"
                          style={{ animation: 'scaleUp 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)', maxWidth: '36.4rem' }}>
-                        <div className="p-10 text-center" style={{ backgroundColor: TEAL }}>
-                            <div className="w-32 h-32 bg-white rounded-full flex items-center justify-center mx-auto mb-8 shadow-xl"
-                                 style={{ animation: 'pulseGlow 2s ease-in-out infinite' }}>
-                                <IconCheck className="w-16 h-16" style={{ color: TEAL }} />
+                        {data.kind === 'success' && <SuccessCard data={data} onDone={onDone} />}
+                        {data.kind === 'partial' && (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                                <SuccessCard data={{ user: data.user, count: data.acceptedCount }} onDone={onDone} />
+                                <PartialWarningCard
+                                    user={data.user}
+                                    rejectedCount={data.rejectedCount}
+                                    rejectedNames={data.rejectedNames}
+                                />
                             </div>
-                            <h2 className="text-white font-display text-4xl font-extrabold mb-3">Checkout Complete!</h2>
-                            <p className="text-white/80 font-body text-xl mb-10 leading-relaxed">
-                                <span className="font-bold text-white text-3xl">{data.count}</span> container{data.count > 1 ? 's' : ''} checked out to<br/>
-                                <span className="font-bold text-white text-2xl border-b-2 border-white/30 pb-0.5">{data.user}</span>
-                            </p>
-                            <button onClick={onDone}
-                                    className="w-full py-5 rounded-xl font-display font-bold text-xl uppercase tracking-wider shadow-lg bg-white hover:bg-gray-50 transition-colors"
-                                    style={{ color: TEAL }}>
-                                Done
-                            </button>
-                        </div>
+                        )}
+                        {data.kind === 'rejected' && <FullRejectionCard data={data} onDone={onDone} />}
                     </div>
                 </div>
             );
@@ -451,6 +598,64 @@
                 <IconX style={{ width: 10, height: 10, color: '#c8d0d8' }} strokeWidth="1.5" />
             </button>
         );
+
+        const SettingsButton = ({ onPress }) => (
+            <button
+                onClick={onPress}
+                style={{
+                    width: 30, height: 30, borderRadius: '50%', flexShrink: 0,
+                    backgroundColor: '#EEF2F3',
+                    border: '1px solid rgba(0,0,0,0.18)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    cursor: 'pointer',
+                }}
+            >
+                <IconSettings style={{ width: 14, height: 14, color: '#c8d0d8' }} />
+            </button>
+        );
+
+        const MockSettingsPanel = ({ value, onChange }) => {
+            const displayCount = value === '' ? 0 : Number.parseInt(value, 10) || 0;
+
+            return (
+                <div style={{
+                    width: 220,
+                    backgroundColor: 'rgba(255,255,255,0.97)',
+                    border: '1px solid rgba(148, 163, 184, 0.2)',
+                    borderRadius: 14,
+                    boxShadow: '0 18px 40px rgba(15, 23, 42, 0.14)',
+                    padding: '14px 14px 12px',
+                    backdropFilter: 'blur(10px)',
+                    WebkitBackdropFilter: 'blur(10px)',
+                }}>
+                    <div className="font-display font-bold uppercase tracking-wider"
+                         style={{ color: '#94a3b8', fontSize: '0.72rem', marginBottom: 8 }}>
+                        Mock checkout
+                    </div>
+                    <label className="font-body font-medium"
+                           style={{ display: 'block', color: '#475569', fontSize: '0.95rem', marginBottom: 8 }}>
+                        Already checked out: {displayCount}
+                    </label>
+                    <input
+                        type="text"
+                        inputMode="numeric"
+                        value={value}
+                        onChange={onChange}
+                        placeholder="0"
+                        className="w-full font-body"
+                        style={{
+                            padding: '10px 12px',
+                            border: '1px solid #dbe3ea',
+                            borderRadius: 10,
+                            fontSize: '1rem',
+                            outline: 'none',
+                            color: '#0f172a',
+                            backgroundColor: 'white',
+                        }}
+                    />
+                </div>
+            );
+        };
 
         // ============================================================
         // ACCESS CODE MODAL
@@ -620,10 +825,17 @@
             const [showDownloadModal, setShowDownloadModal] = useState(false);
             const [showAccessModal, setShowAccessModal]     = useState(false);
             const [isPortrait, setIsPortrait]               = useState(() => window.innerHeight > window.innerWidth);
+            const [showMockSettings, setShowMockSettings]   = useState(false);
+            const [mockRejectedInput, setMockRejectedInput] = useState('');
 
             const scannedCodesRef = useRef(new Set());
             const audioCtxRef     = useRef(null);
-            const dingBufferRef   = useRef(null);
+            const soundBuffersRef = useRef({
+                scanSuccess: null,
+                checkoutSuccess: null,
+                error: null,
+            });
+            const mockPanelRef    = useRef(null);
 
             // Orientation detection
             useEffect(() => {
@@ -633,6 +845,21 @@
                 return () => mq.removeEventListener('change', handler);
             }, []);
 
+            useEffect(() => {
+                if (!showMockSettings) return;
+                const handlePointerDown = (event) => {
+                    if (!mockPanelRef.current?.contains(event.target)) {
+                        setShowMockSettings(false);
+                    }
+                };
+                document.addEventListener('mousedown', handlePointerDown);
+                document.addEventListener('touchstart', handlePointerDown);
+                return () => {
+                    document.removeEventListener('mousedown', handlePointerDown);
+                    document.removeEventListener('touchstart', handlePointerDown);
+                };
+            }, [showMockSettings]);
+
             // Audio unlock
             useEffect(() => {
                 const unlock = async () => {
@@ -640,9 +867,18 @@
                     const ctx = new (window.AudioContext || window.webkitAudioContext)();
                     audioCtxRef.current = ctx;
                     try {
-                        const res = await fetch('../success-ding.m4a');
-                        const buf = await res.arrayBuffer();
-                        dingBufferRef.current = await ctx.decodeAudioData(buf);
+                        const soundEntries = [
+                            ['scanSuccess', '../sounds/successful-scan.m4a'],
+                            ['checkoutSuccess', '../sounds/checkout-complete.mp3'],
+                            ['error', '../sounds/error.mp3'],
+                        ];
+
+                        await Promise.all(soundEntries.map(async ([key, path]) => {
+                            const res = await fetch(path);
+                            if (!res.ok) throw new Error(`Failed to load ${path}`);
+                            const buf = await res.arrayBuffer();
+                            soundBuffersRef.current[key] = await ctx.decodeAudioData(buf);
+                        }));
                     } catch (_) {}
                 };
                 document.addEventListener('touchstart', unlock, { once: true });
@@ -653,13 +889,20 @@
                 };
             }, []);
 
-            const playDing = useCallback(() => {
-                if (!audioCtxRef.current || !dingBufferRef.current) return;
-                const src = audioCtxRef.current.createBufferSource();
-                src.buffer = dingBufferRef.current;
-                src.connect(audioCtxRef.current.destination);
+            const playSound = useCallback((soundKey) => {
+                const ctx = audioCtxRef.current;
+                const buffer = soundBuffersRef.current[soundKey];
+                if (!ctx || !buffer) return;
+                if (ctx.state === 'suspended') ctx.resume().catch(() => {});
+                const src = ctx.createBufferSource();
+                src.buffer = buffer;
+                src.connect(ctx.destination);
                 src.start(0);
             }, []);
+
+            const desiredRejectedCount = mockRejectedInput === ''
+                ? 0
+                : Math.max(0, Number.parseInt(mockRejectedInput, 10) || 0);
 
             const hasItems    = items.length > 0;
             const showTimeout = hasItems && status !== 'success';
@@ -682,27 +925,55 @@
                 scannedCodesRef.current.clear();
             }, []);
 
+            const handleMockRejectedChange = useCallback((event) => {
+                const nextValue = event.target.value.replace(/\D/g, '').slice(0, 2);
+                setMockRejectedInput(nextValue);
+            }, []);
+
             const handleScanContainer = useCallback(() => {
-                playDing();
+                playSound('scanSuccess');
                 setTimeLeft(30);
                 setItems(prev => [...prev, { id: Date.now() }]);
                 setStatus('scanning');
                 setError(null);
                 setJustScanned(true);
                 setTimeout(() => setJustScanned(false), 1500);
-            }, [playDing]);
+            }, [playSound]);
 
             const handleScanUser = useCallback(() => {
                 if (items.length === 0) {
+                    playSound('error');
                     setError("Please scan a USEFULL container first.");
                     setTimeout(() => setError(null), 3000);
                     return;
                 }
-                playDing();
-                setSuccessData({ user: "Owen", count: items.length });
+                const rejectedCount = Math.min(desiredRejectedCount, items.length);
+                const acceptedCount = items.length - rejectedCount;
+                let outcome;
+
+                if (rejectedCount <= 0) {
+                    playSound('checkoutSuccess');
+                    outcome = { kind: 'success', user: 'Owen', count: items.length };
+                } else if (rejectedCount >= items.length) {
+                    playSound('error');
+                    outcome = { kind: 'rejected', user: 'Owen', count: items.length };
+                } else {
+                    playSound('error');
+                    outcome = {
+                        kind: 'partial',
+                        user: 'Owen',
+                        acceptedCount,
+                        rejectedCount,
+                        rejectedNames: rejectedCount <= 2
+                            ? PARTIAL_CHECKOUT_NAMES.slice(0, rejectedCount)
+                            : PARTIAL_CHECKOUT_NAMES.slice(0, 1),
+                    };
+                }
+
+                setSuccessData(outcome);
                 setStatus('success');
-                setTimeout(() => handleCancel(), 4000);
-            }, [items.length, handleCancel, playDing]);
+                setTimeout(() => handleCancel(), outcome.kind === 'success' ? 7000 : 30000);
+            }, [desiredRejectedCount, items.length, handleCancel, playSound]);
 
             const handleQRResult = useCallback((decoded) => {
                 if (scannedCodesRef.current.has(decoded)) return;
@@ -712,16 +983,17 @@
                 } else if (decoded.startsWith('user')) {
                     handleScanUser();
                 } else {
+                    playSound('error');
                     setError('Unrecognized QR code');
-                    setTimeout(() => setError(null), 4000);
+                    setTimeout(() => setError(null), 7000);
                 }
-            }, [handleScanContainer, handleScanUser]);
+            }, [handleScanContainer, handleScanUser, playSound]);
 
             const modals = (
                 <>
                     <DownloadModal isOpen={showDownloadModal} onClose={() => setShowDownloadModal(false)} />
                     <AccessCodeModal isOpen={showAccessModal} onClose={() => { handleCancel(); setShowAccessModal(false); }} />
-                    <SuccessModal data={status === 'success' ? successData : null} onDone={handleCancel} />
+                    <OutcomeModal data={status === 'success' ? successData : null} onDone={handleCancel} />
                 </>
             );
 
@@ -781,7 +1053,15 @@
                             {/* Bottom strip: close + logo + action */}
                             <div className="shrink-0 flex items-center gap-3"
                                  style={{ borderTop: '1px solid rgba(0,140,149,0.12)', paddingTop: 13, paddingBottom: 4 }}>
-                                <CloseButton onPress={() => setShowAccessModal(true)} />
+                                <div ref={mockPanelRef} style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 8 }}>
+                                    {showMockSettings && (
+                                        <div style={{ position: 'absolute', left: 0, bottom: 'calc(100% + 12px)', zIndex: 40 }}>
+                                            <MockSettingsPanel value={mockRejectedInput} onChange={handleMockRejectedChange} />
+                                        </div>
+                                    )}
+                                    <SettingsButton onPress={() => setShowMockSettings(prev => !prev)} />
+                                    <CloseButton onPress={() => setShowAccessModal(true)} />
+                                </div>
                                 <div className="flex flex-col items-start">
                                     <UsefullLogo style={{ height: '3rem' }} className="w-auto" />
                                     <p className="font-display font-bold uppercase tracking-[0.2em]"
@@ -809,9 +1089,17 @@
                 <div className="h-full w-full flex overflow-hidden select-none relative"
                      style={{ backgroundColor: '#EEF2F3', padding: '20px', gap: '20px' }}>
 
-                    {/* Close button — top right */}
-                    <div style={{ position: 'absolute', top: 16, right: 16, zIndex: 30 }}>
-                        <CloseButton onPress={() => setShowAccessModal(true)} />
+                    {/* Corner controls — top right */}
+                    <div ref={mockPanelRef} style={{ position: 'absolute', top: 16, right: 16, zIndex: 30 }}>
+                        <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'flex-end' }}>
+                            {showMockSettings && (
+                                <div style={{ position: 'absolute', top: 'calc(100% + 12px)', right: 0 }}>
+                                    <MockSettingsPanel value={mockRejectedInput} onChange={handleMockRejectedChange} />
+                                </div>
+                            )}
+                            <SettingsButton onPress={() => setShowMockSettings(prev => !prev)} />
+                            <CloseButton onPress={() => setShowAccessModal(true)} />
+                        </div>
                     </div>
 
                     {/* Left: Camera — full height, 50% width */}

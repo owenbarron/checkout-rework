@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mockup — Partial Checkout Complete</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: { extend: { fontFamily: {
+                display: ['"Plus Jakarta Sans"', 'system-ui', 'sans-serif'],
+                body:    ['"DM Sans"', 'system-ui', 'sans-serif'],
+            } } }
+        }
+    </script>
+    <style>
+        * { box-sizing: border-box; }
+        body { font-family: 'DM Sans', sans-serif; background: #1f2225; margin: 0; padding: 48px 24px; min-height: 100vh; color: #eee; }
+        .stage {
+            position: relative;
+            background-image:
+                linear-gradient(rgba(0,0,0,0.45), rgba(0,0,0,0.45)),
+                linear-gradient(135deg, #7d7f82 0%, #4a5568 100%);
+            border-radius: 24px;
+            padding: 48px 32px;
+            display: flex;
+            justify-content: center;
+        }
+        .label { color: #d4d4d4; font-family: 'DM Sans', sans-serif; font-size: 13px; letter-spacing: 0.08em; text-transform: uppercase; margin: 0 0 10px; font-weight: 600; }
+        .caption { color: #9aa0a6; font-size: 12.5px; margin: 10px 0 0; font-style: italic; }
+        .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 32px; max-width: 1400px; margin: 0 auto; }
+        h1 { color: #fff; font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 800; font-size: 32px; margin: 0 0 8px; text-align: center; letter-spacing: -0.02em; }
+        .sub { color: #aaa; text-align: center; margin: 0 0 40px; font-size: 15px; max-width: 720px; margin-left: auto; margin-right: auto; }
+        h2.section { color: #fff; font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 700; font-size: 18px; letter-spacing: 0.06em; text-transform: uppercase; margin: 56px auto 24px; max-width: 1400px; padding-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        h2.section:first-of-type { margin-top: 0; }
+    </style>
+</head>
+<body>
+    <h1>Checkout Complete — Partial Success</h1>
+    <p class="sub">Nine treatments of the alert icon, plus a couple of scenario mockups below, all using Variant C styling. Same copy, same sizing, same backdrop.</p>
+    <div id="root"></div>
+
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <script type="text/babel">
+        const TEAL = '#008C95';
+        const GOLD = '#D69A2D';
+
+        const IconCheck = ({ className, style }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className={className} style={style}>
+                <path d="M20 6 9 17l-5-5"/>
+            </svg>
+        );
+
+        // Warning triangle. triangleColor fills the shape; accentColor is the "!" inside.
+        const IconWarning = ({ style, triangleColor = '#fff', accentColor = GOLD }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" style={style}>
+                <path fill={triangleColor}
+                      d="M12 2.5c-.7 0-1.35.38-1.72 1L1.54 19.25a1.93 1.93 0 0 0 0 1.97c.36.63 1.04 1.03 1.77 1.03h17.38c.73 0 1.41-.4 1.77-1.03a1.93 1.93 0 0 0 0-1.97L13.72 3.5c-.37-.62-1.02-1-1.72-1z"/>
+                <rect x="10.9" y="8.5" width="2.2" height="6.3" rx="1.1" fill={accentColor}/>
+                <circle cx="12" cy="17.8" r="1.3" fill={accentColor}/>
+            </svg>
+        );
+
+        const IconExclamation = ({ style, color = GOLD }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" style={style}>
+                <rect x="10.2" y="3.2" width="3.6" height="13.2" rx="1.8" fill={color}/>
+                <circle cx="12" cy="20" r="2.1" fill={color}/>
+            </svg>
+        );
+
+        const Pill = ({ children }) => (
+            <span style={{
+                display: 'inline-block',
+                background: '#fff',
+                color: GOLD,
+                fontWeight: 500,
+                fontSize: '0.9rem',
+                padding: '0.3rem 0.75rem',
+                borderRadius: '999px',
+                whiteSpace: 'nowrap',
+                fontFamily: '"DM Sans", sans-serif',
+                letterSpacing: '-0.005em',
+            }}>{children}</span>
+        );
+
+        const AlertText = ({ user, count, align = 'left' }) => (
+            <div style={{
+                color: '#fff',
+                fontWeight: 500,
+                fontSize: '0.98rem',
+                fontFamily: '"DM Sans", sans-serif',
+                lineHeight: 1.4,
+                textAlign: align,
+            }}>
+                {count} container{count !== 1 ? 's' : ''} already checked out to {user}
+            </div>
+        );
+
+        const PillRow = ({ names, align = 'flex-start' }) => (
+            <div style={{
+                display: 'flex',
+                flexWrap: 'wrap',
+                gap: '0.45rem',
+                alignItems: 'center',
+                justifyContent: align,
+                marginTop: '0.55rem',
+            }}>
+                {names.length <= 2
+                    ? names.map(n => <Pill key={n}>{n}</Pill>)
+                    : (<>
+                        <Pill>{names[0]}</Pill>
+                        <span style={{ color: '#fff', fontWeight: 500, fontSize: '0.9rem', opacity: 0.9 }}>
+                            and {names.length - 1} more
+                        </span>
+                    </>)
+                }
+            </div>
+        );
+
+        const GoldBase = ({ children, style = {} }) => (
+            <div style={{
+                background: GOLD,
+                borderRadius: '0.85rem',
+                padding: '0.9rem 1.1rem',
+                boxShadow: '0 10px 30px rgba(0,0,0,0.25)',
+                position: 'relative',
+                ...style,
+            }}>
+                {children}
+            </div>
+        );
+
+        // --- Alert variants ---------------------------------------------------------
+
+        // 1. Current baseline — triangle on the left
+        const Alert_Left = ({ user, alreadyNames }) => (
+            <GoldBase>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+                    <IconWarning style={{ width: 32, height: 32, flexShrink: 0 }}
+                                 triangleColor="#fff" accentColor={GOLD} />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                        <AlertText user={user} count={alreadyNames.length} />
+                        <PillRow names={alreadyNames} />
+                    </div>
+                </div>
+            </GoldBase>
+        );
+
+        // 2. No icon — color + copy carry the signal
+        const Alert_None = ({ user, alreadyNames }) => (
+            <GoldBase>
+                <AlertText user={user} count={alreadyNames.length} />
+                <PillRow names={alreadyNames} />
+            </GoldBase>
+        );
+
+        // 3. Inline prefix — small triangle baseline-aligned with the first word
+        const Alert_Inline = ({ user, alreadyNames }) => (
+            <GoldBase>
+                <div style={{
+                    color: '#fff',
+                    fontWeight: 500,
+                    fontSize: '0.98rem',
+                    fontFamily: '"DM Sans", sans-serif',
+                    lineHeight: 1.4,
+                }}>
+                    <IconWarning style={{ width: 16, height: 16, display: 'inline-block', verticalAlign: '-3px', marginRight: '0.45rem' }}
+                                 triangleColor="#fff" accentColor={GOLD} />
+                    {alreadyNames.length} container{alreadyNames.length !== 1 ? 's' : ''} already checked out to {user}
+                </div>
+                <PillRow names={alreadyNames} />
+            </GoldBase>
+        );
+
+        // 4. Corner bubble — white circle overlapping the top-left corner
+        const Alert_Corner = ({ user, alreadyNames }) => (
+            <GoldBase style={{ padding: '1rem 1.1rem 1rem 2.75rem', marginLeft: '0.6rem' }}>
+                <div style={{
+                    position: 'absolute',
+                    left: '-0.75rem',
+                    top: '-0.75rem',
+                    width: '2.5rem',
+                    height: '2.5rem',
+                    background: '#fff',
+                    borderRadius: '50%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    boxShadow: '0 6px 14px rgba(0,0,0,0.25)',
+                }}>
+                    <IconWarning style={{ width: 20, height: 20 }}
+                                 triangleColor={GOLD} accentColor="#fff" />
+                </div>
+                <AlertText user={user} count={alreadyNames.length} />
+                <PillRow names={alreadyNames} />
+            </GoldBase>
+        );
+
+        // 5. Centered above — icon inside the card, text below (parallels teal card)
+        const Alert_Centered = ({ user, alreadyNames }) => (
+            <GoldBase style={{ padding: '1.2rem 1.1rem 1.15rem', textAlign: 'center' }}>
+                <div style={{
+                    width: '3rem', height: '3rem',
+                    background: '#fff', borderRadius: '50%',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    margin: '0 auto 0.7rem',
+                    boxShadow: '0 4px 10px rgba(0,0,0,0.12)',
+                }}>
+                    <IconWarning style={{ width: 22, height: 22 }}
+                                 triangleColor={GOLD} accentColor="#fff" />
+                </div>
+                <AlertText user={user} count={alreadyNames.length} align="center" />
+                <PillRow names={alreadyNames} align="center" />
+            </GoldBase>
+        );
+
+        // 6. Cresting popout — white medallion half above the card's top edge
+        const Alert_Cresting = ({ user, alreadyNames }) => (
+            <div style={{ position: 'relative', paddingTop: '1.4rem' }}>
+                <div style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: '50%',
+                    transform: 'translateX(-50%)',
+                    width: '2.85rem',
+                    height: '2.85rem',
+                    background: '#fff',
+                    borderRadius: '50%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    boxShadow: '0 8px 18px rgba(0,0,0,0.28)',
+                    zIndex: 2,
+                }}>
+                    <IconWarning style={{ width: 22, height: 22 }}
+                                 triangleColor={GOLD} accentColor="#fff" />
+                </div>
+                <GoldBase style={{ padding: '1.65rem 1.1rem 1.15rem', textAlign: 'center' }}>
+                    <AlertText user={user} count={alreadyNames.length} align="center" />
+                    <PillRow names={alreadyNames} align="center" />
+                </GoldBase>
+            </div>
+        );
+
+        // 7. Cresting triangle — standalone white triangle above the card edge
+        const Alert_CrestingTriangle = ({ user, alreadyNames }) => (
+            <div style={{ position: 'relative', paddingTop: '1.3rem' }}>
+                <div style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: '50%',
+                    transform: 'translateX(-50%)',
+                    width: '2.4rem',
+                    height: '2.4rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    filter: 'drop-shadow(0 8px 18px rgba(0,0,0,0.28))',
+                    zIndex: 2,
+                }}>
+                    <IconWarning style={{ width: '100%', height: '100%' }}
+                                 triangleColor="#fff" accentColor={GOLD} />
+                </div>
+                <GoldBase style={{ padding: '1.6rem 1.1rem 1.15rem', textAlign: 'center' }}>
+                    <AlertText user={user} count={alreadyNames.length} align="center" />
+                    <PillRow names={alreadyNames} align="center" />
+                </GoldBase>
+            </div>
+        );
+
+        // 8. Centered above — same as #5, but with just the exclamation mark
+        const Alert_CenteredExclamation = ({ user, alreadyNames }) => (
+            <GoldBase style={{ padding: '1.2rem 1.1rem 1.15rem', textAlign: 'center' }}>
+                <div style={{
+                    width: '3rem', height: '3rem',
+                    background: '#fff', borderRadius: '50%',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    margin: '0 auto 0.7rem',
+                    boxShadow: '0 4px 10px rgba(0,0,0,0.12)',
+                }}>
+                    <IconExclamation style={{ width: 24, height: 24 }} color={GOLD} />
+                </div>
+                <AlertText user={user} count={alreadyNames.length} align="center" />
+                <PillRow names={alreadyNames} align="center" />
+            </GoldBase>
+        );
+
+        // 9. Cresting popout — same as #6, but with just the exclamation mark
+        const Alert_CrestingExclamation = ({ user, alreadyNames }) => (
+            <div style={{ position: 'relative', paddingTop: '1.4rem' }}>
+                <div style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: '50%',
+                    transform: 'translateX(-50%)',
+                    width: '2.85rem',
+                    height: '2.85rem',
+                    background: '#fff',
+                    borderRadius: '50%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    boxShadow: '0 8px 18px rgba(0,0,0,0.28)',
+                    zIndex: 2,
+                }}>
+                    <IconExclamation style={{ width: 24, height: 24 }} color={GOLD} />
+                </div>
+                <GoldBase style={{ padding: '1.65rem 1.1rem 1.15rem', textAlign: 'center' }}>
+                    <AlertText user={user} count={alreadyNames.length} align="center" />
+                    <PillRow names={alreadyNames} align="center" />
+                </GoldBase>
+            </div>
+        );
+
+        const WarningCard = ({ rejectedCount, user }) => (
+            <div className="bg-white rounded-3xl shadow-2xl overflow-hidden">
+                <div className="text-center" style={{ backgroundColor: GOLD, padding: '2.25rem 2.25rem 1.75rem' }}>
+                    <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center mx-auto mb-5 shadow-xl">
+                        <IconExclamation style={{ width: 46, height: 46 }} color={GOLD} />
+                    </div>
+                    <h2 className="text-white font-display text-4xl font-extrabold mb-2">Already Checked Out!</h2>
+                    <p className="text-white/85 font-body text-lg mb-0 leading-relaxed">
+                        <span className="font-bold text-white text-2xl">{rejectedCount}</span> container{rejectedCount !== 1 ? 's' : ''} already checked out to<br/>
+                        <span className="font-bold text-white text-xl border-b-2 border-white/30 pb-0.5">{user}</span>
+                    </p>
+                </div>
+            </div>
+        );
+
+        const TealCard = ({ successCount, user }) => (
+            <div className="bg-white rounded-3xl shadow-2xl overflow-hidden">
+                <div className="text-center" style={{ backgroundColor: TEAL, padding: '2.25rem 2.25rem 1.75rem' }}>
+                    <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center mx-auto mb-5 shadow-xl">
+                        <IconCheck className="w-12 h-12" style={{ color: TEAL }} />
+                    </div>
+                    <h2 className="text-white font-display text-4xl font-extrabold mb-2">Checkout Complete!</h2>
+                    <p className="text-white/80 font-body text-lg mb-7 leading-relaxed">
+                        <span className="font-bold text-white text-2xl">{successCount}</span> container{successCount !== 1 ? 's' : ''} checked out to<br/>
+                        <span className="font-bold text-white text-xl border-b-2 border-white/30 pb-0.5">{user}</span>
+                    </p>
+                    <button className="w-full py-4 rounded-xl font-display font-bold text-lg uppercase tracking-wider shadow-lg bg-white hover:bg-gray-50 transition-colors"
+                            style={{ color: TEAL }}>
+                        Done
+                    </button>
+                </div>
+            </div>
+        );
+
+        const Stage = ({ children, gap = '0.9rem' }) => (
+            <div className="stage">
+                <div style={{ width: '100%', maxWidth: '32rem', display: 'flex', flexDirection: 'column', gap }}>
+                    {children}
+                </div>
+            </div>
+        );
+
+        const Card = ({ label, caption, children }) => (
+            <div>
+                <p className="label">{label}</p>
+                {children}
+                {caption && <p className="caption">{caption}</p>}
+            </div>
+        );
+
+        const TWO = ['Dubious Almond Giraffe', 'Frivolous Violet Flamingo'];
+        const FOUR = ['Dubious Almond Giraffe', 'Frivolous Violet Flamingo', 'Curious Silver Otter', 'Brisk Amber Pelican'];
+
+        const App = () => (
+            <div>
+                <div className="grid">
+                    <Card label="1 · Current — triangle on left"
+                          caption="The baseline. Icon crowds the copy on narrow widths.">
+                        <Stage>
+                            <TealCard successCount={1} user="Owen" />
+                            <Alert_Left user="Owen" alreadyNames={TWO} />
+                        </Stage>
+                    </Card>
+
+                    <Card label="2 · No icon"
+                          caption="Gold + the word 'already' carries the warning. Quietest, most confident.">
+                        <Stage>
+                            <TealCard successCount={1} user="Owen" />
+                            <Alert_None user="Owen" alreadyNames={TWO} />
+                        </Stage>
+                    </Card>
+
+                    <Card label="3 · Inline prefix"
+                          caption="Small triangle baseline-aligned with the text. Journalistic, lightweight.">
+                        <Stage>
+                            <TealCard successCount={1} user="Owen" />
+                            <Alert_Inline user="Owen" alreadyNames={TWO} />
+                        </Stage>
+                    </Card>
+
+                    <Card label="4 · Top-left corner bubble"
+                          caption="Chip overlapping the corner. Reads as a notification badge more than an alert.">
+                        <Stage>
+                            <TealCard successCount={1} user="Owen" />
+                            <Alert_Corner user="Owen" alreadyNames={TWO} />
+                        </Stage>
+                    </Card>
+
+                    <Card label="5 · Centered above (inside)"
+                          caption="Icon sits above the copy inside the card — mirrors the teal card's layout.">
+                        <Stage>
+                            <TealCard successCount={1} user="Owen" />
+                            <Alert_Centered user="Owen" alreadyNames={TWO} />
+                        </Stage>
+                    </Card>
+
+                    <Card label="6 · Cresting medallion"
+                          caption="Icon crests the top edge of the card. Same rhythm as the teal card, with lift.">
+                        <Stage gap="1.1rem">
+                            <TealCard successCount={1} user="Owen" />
+                            <Alert_Cresting user="Owen" alreadyNames={TWO} />
+                        </Stage>
+                    </Card>
+
+                    <Card label="7 · Cresting triangle"
+                          caption="Same lifted placement as #6, but with the white triangle itself as the outer shape.">
+                        <Stage gap="1.1rem">
+                            <TealCard successCount={1} user="Owen" />
+                            <Alert_CrestingTriangle user="Owen" alreadyNames={TWO} />
+                        </Stage>
+                    </Card>
+
+                    <Card label="8 · Centered above (exclamation)"
+                          caption="Matches #5, but lets the exclamation mark carry the warning on its own.">
+                        <Stage>
+                            <TealCard successCount={1} user="Owen" />
+                            <Alert_CenteredExclamation user="Owen" alreadyNames={TWO} />
+                        </Stage>
+                    </Card>
+
+                    <Card label="9 · Cresting exclamation"
+                          caption="Matches #6, but removes the triangle and keeps only the exclamation in the medallion.">
+                        <Stage gap="1.1rem">
+                            <TealCard successCount={1} user="Owen" />
+                            <Alert_CrestingExclamation user="Owen" alreadyNames={TWO} />
+                        </Stage>
+                    </Card>
+                </div>
+
+                <h2 className="section">Scenario Mockups</h2>
+
+                <div className="grid">
+                    <Card label="10 · Partial checkout — 3+ already checked out"
+                          caption="Uses the #9 cresting exclamation treatment, with one pill plus a compact 'and X more' summary.">
+                        <Stage gap="1.1rem">
+                            <TealCard successCount={1} user="Owen" />
+                            <Alert_CrestingExclamation user="Owen" alreadyNames={FOUR} />
+                        </Stage>
+                    </Card>
+
+                    <Card label="Already Checked Out · Full rejection"
+                          caption="Single-card warning state for when every scanned container was already checked out to the same person.">
+                        <Stage>
+                            <WarningCard rejectedCount={4} user="Owen" />
+                        </Stage>
+                    </Card>
+                </div>
+            </div>
+        );
+
+        ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+    </script>
+</body>
+</html>
