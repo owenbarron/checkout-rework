@@ -4,12 +4,12 @@ const ASSETS = [
     './index.html',
     './manifest.json',
     '../images/USEFULL-Icon-Registered_Color.svg',
-    '../sounds/successful-scan.m4a',
     '../sounds/error.mp3',
     '../sounds/final-success-chime-1.mp3',
     '../sounds/final-success-chime-2.mp3',
     '../sounds/final-success-chime-3.mp3',
     '../sounds/final-success-chime-4.mp3',
+    '../sounds/successful-scan.m4a',
 ];
 
 self.addEventListener('install', (event) => {

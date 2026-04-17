@@ -83,11 +83,13 @@
             'Curious Silver Otter',
             'Brisk Amber Pelican',
         ];
-        const FINAL_SUCCESS_CHIME_OPTIONS = [
-            { value: 'chime1', label: 'Chime 1', path: '../sounds/final-success-chime-1.mp3' },
-            { value: 'chime2', label: 'Chime 2', path: '../sounds/final-success-chime-2.mp3' },
-            { value: 'chime3', label: 'Chime 3', path: '../sounds/final-success-chime-3.mp3' },
-            { value: 'chime4', label: 'Chime 4', path: '../sounds/final-success-chime-4.mp3' },
+        const SOUND_OPTIONS = [
+            { value: 'error', label: 'error', path: '../sounds/error.mp3' },
+            { value: 'final-success-chime-1', label: 'final-success-chime-1', path: '../sounds/final-success-chime-1.mp3' },
+            { value: 'final-success-chime-2', label: 'final-success-chime-2', path: '../sounds/final-success-chime-2.mp3' },
+            { value: 'final-success-chime-3', label: 'final-success-chime-3', path: '../sounds/final-success-chime-3.mp3' },
+            { value: 'final-success-chime-4', label: 'final-success-chime-4', path: '../sounds/final-success-chime-4.mp3' },
+            { value: 'successful-scan', label: 'successful-scan', path: '../sounds/successful-scan.m4a' },
         ];
 
         // ============================================================
@@ -620,12 +622,77 @@
             </button>
         );
 
-        const MockSettingsPanel = ({ value, onChange, selectedChime, onChimeChange, onPreviewChime }) => {
+        const SoundSelectRow = ({ label, value, onChange, onPreview }) => (
+            <>
+                <label className="font-body font-medium"
+                       style={{ display: 'block', color: '#475569', fontSize: '0.95rem', marginTop: 14, marginBottom: 8 }}>
+                    {label}
+                </label>
+                <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 42px', alignItems: 'center', gap: 8 }}>
+                    <select
+                        value={value}
+                        onChange={onChange}
+                        className="font-body"
+                        style={{
+                            width: '100%',
+                            minWidth: 0,
+                            padding: '10px 12px',
+                            border: '1px solid #dbe3ea',
+                            borderRadius: 10,
+                            fontSize: '0.96rem',
+                            outline: 'none',
+                            color: '#0f172a',
+                            backgroundColor: 'white',
+                        }}
+                    >
+                        {SOUND_OPTIONS.map((option) => (
+                            <option key={option.value} value={option.value}>{option.label}</option>
+                        ))}
+                    </select>
+                    <button
+                        onClick={onPreview}
+                        title={`Play ${label}`}
+                        style={{
+                            width: 42,
+                            height: 42,
+                            borderRadius: 10,
+                            border: '1px solid #dbe3ea',
+                            backgroundColor: 'white',
+                            color: TEAL,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            cursor: 'pointer',
+                            flexShrink: 0,
+                        }}
+                    >
+                        <svg viewBox="0 0 24 24" fill="currentColor" style={{ width: 16, height: 16, marginLeft: 2 }}>
+                            <path d="M8 5.14v13.72a1 1 0 0 0 1.52.85l10.86-6.86a1 1 0 0 0 0-1.7L9.52 4.29A1 1 0 0 0 8 5.14z"/>
+                        </svg>
+                    </button>
+                </div>
+            </>
+        );
+
+        const MockSettingsPanel = ({
+            value,
+            onChange,
+            containerSuccessSound,
+            onContainerSuccessSoundChange,
+            onPreviewContainerSuccessSound,
+            finalSuccessSound,
+            onFinalSuccessSoundChange,
+            onPreviewFinalSuccessSound,
+            errorSound,
+            onErrorSoundChange,
+            onPreviewErrorSound,
+        }) => {
             const displayCount = value === '' ? 0 : Number.parseInt(value, 10) || 0;
 
             return (
                 <div style={{
-                    width: 260,
+                    width: 320,
+                    maxWidth: 'min(320px, calc(100vw - 48px))',
                     backgroundColor: 'rgba(255,255,255,0.97)',
                     border: '1px solid rgba(148, 163, 184, 0.2)',
                     borderRadius: 14,
@@ -659,52 +726,28 @@
                             backgroundColor: 'white',
                         }}
                     />
-                    <label className="font-body font-medium"
-                           style={{ display: 'block', color: '#475569', fontSize: '0.95rem', marginTop: 14, marginBottom: 8 }}>
-                        Final Success Chime
-                    </label>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <select
-                            value={selectedChime}
-                            onChange={onChimeChange}
-                            className="font-body"
-                            style={{
-                                flex: 1,
-                                padding: '10px 12px',
-                                border: '1px solid #dbe3ea',
-                                borderRadius: 10,
-                                fontSize: '0.96rem',
-                                outline: 'none',
-                                color: '#0f172a',
-                                backgroundColor: 'white',
-                            }}
-                        >
-                            {FINAL_SUCCESS_CHIME_OPTIONS.map((option) => (
-                                <option key={option.value} value={option.value}>{option.label}</option>
-                            ))}
-                        </select>
-                        <button
-                            onClick={onPreviewChime}
-                            title="Play selected chime"
-                            style={{
-                                width: 42,
-                                height: 42,
-                                borderRadius: 10,
-                                border: '1px solid #dbe3ea',
-                                backgroundColor: 'white',
-                                color: TEAL,
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                cursor: 'pointer',
-                                flexShrink: 0,
-                            }}
-                        >
-                            <svg viewBox="0 0 24 24" fill="currentColor" style={{ width: 16, height: 16, marginLeft: 2 }}>
-                                <path d="M8 5.14v13.72a1 1 0 0 0 1.52.85l10.86-6.86a1 1 0 0 0 0-1.7L9.52 4.29A1 1 0 0 0 8 5.14z"/>
-                            </svg>
-                        </button>
+                    <div className="font-display font-bold uppercase tracking-wider"
+                         style={{ color: '#94a3b8', fontSize: '0.72rem', marginTop: 16, marginBottom: 6 }}>
+                        Sounds
                     </div>
+                    <SoundSelectRow
+                        label="Container Success"
+                        value={containerSuccessSound}
+                        onChange={onContainerSuccessSoundChange}
+                        onPreview={onPreviewContainerSuccessSound}
+                    />
+                    <SoundSelectRow
+                        label="Final Success"
+                        value={finalSuccessSound}
+                        onChange={onFinalSuccessSoundChange}
+                        onPreview={onPreviewFinalSuccessSound}
+                    />
+                    <SoundSelectRow
+                        label="Error"
+                        value={errorSound}
+                        onChange={onErrorSoundChange}
+                        onPreview={onPreviewErrorSound}
+                    />
                 </div>
             );
         };
@@ -879,13 +922,13 @@
             const [isPortrait, setIsPortrait]               = useState(() => window.innerHeight > window.innerWidth);
             const [showMockSettings, setShowMockSettings]   = useState(false);
             const [mockRejectedInput, setMockRejectedInput] = useState('');
-            const [finalSuccessChime, setFinalSuccessChime] = useState('chime1');
+            const [containerSuccessSound, setContainerSuccessSound] = useState('successful-scan');
+            const [finalSuccessSound, setFinalSuccessSound]         = useState('final-success-chime-1');
+            const [errorSound, setErrorSound]                       = useState('error');
 
             const scannedCodesRef = useRef(new Set());
             const audioCtxRef     = useRef(null);
             const soundBuffersRef = useRef({
-                scanSuccess: null,
-                error: null,
             });
             const mockPanelRef    = useRef(null);
 
@@ -920,9 +963,7 @@
                     audioCtxRef.current = ctx;
                     try {
                         const soundEntries = [
-                            ['scanSuccess', '../sounds/successful-scan.m4a'],
-                            ['error', '../sounds/error.mp3'],
-                            ...FINAL_SUCCESS_CHIME_OPTIONS.map((option) => [option.value, option.path]),
+                            ...SOUND_OPTIONS.map((option) => [option.value, option.path]),
                         ];
 
                         await Promise.all(soundEntries.map(async ([key, path]) => {
@@ -982,27 +1023,43 @@
                 setMockRejectedInput(nextValue);
             }, []);
 
-            const handleFinalSuccessChimeChange = useCallback((event) => {
-                setFinalSuccessChime(event.target.value);
+            const handleContainerSuccessSoundChange = useCallback((event) => {
+                setContainerSuccessSound(event.target.value);
             }, []);
 
-            const previewFinalSuccessChime = useCallback(() => {
-                playSound(finalSuccessChime);
-            }, [finalSuccessChime, playSound]);
+            const handleFinalSuccessSoundChange = useCallback((event) => {
+                setFinalSuccessSound(event.target.value);
+            }, []);
+
+            const handleErrorSoundChange = useCallback((event) => {
+                setErrorSound(event.target.value);
+            }, []);
+
+            const previewContainerSuccessSound = useCallback(() => {
+                playSound(containerSuccessSound);
+            }, [containerSuccessSound, playSound]);
+
+            const previewFinalSuccessSound = useCallback(() => {
+                playSound(finalSuccessSound);
+            }, [finalSuccessSound, playSound]);
+
+            const previewErrorSound = useCallback(() => {
+                playSound(errorSound);
+            }, [errorSound, playSound]);
 
             const handleScanContainer = useCallback(() => {
-                playSound('scanSuccess');
+                playSound(containerSuccessSound);
                 setTimeLeft(30);
                 setItems(prev => [...prev, { id: Date.now() }]);
                 setStatus('scanning');
                 setError(null);
                 setJustScanned(true);
                 setTimeout(() => setJustScanned(false), 1500);
-            }, [playSound]);
+            }, [containerSuccessSound, playSound]);
 
             const handleScanUser = useCallback(() => {
                 if (items.length === 0) {
-                    playSound('error');
+                    playSound(errorSound);
                     setError("Please scan a USEFULL container first.");
                     setTimeout(() => setError(null), 3000);
                     return;
@@ -1012,13 +1069,13 @@
                 let outcome;
 
                 if (rejectedCount <= 0) {
-                    playSound(finalSuccessChime);
+                    playSound(finalSuccessSound);
                     outcome = { kind: 'success', user: 'Owen', count: items.length };
                 } else if (rejectedCount >= items.length) {
-                    playSound('error');
+                    playSound(errorSound);
                     outcome = { kind: 'rejected', user: 'Owen', count: items.length };
                 } else {
-                    playSound('error');
+                    playSound(errorSound);
                     outcome = {
                         kind: 'partial',
                         user: 'Owen',
@@ -1033,7 +1090,7 @@
                 setSuccessData(outcome);
                 setStatus('success');
                 setTimeout(() => handleCancel(), outcome.kind === 'success' ? 7000 : 30000);
-            }, [desiredRejectedCount, finalSuccessChime, items.length, handleCancel, playSound]);
+            }, [desiredRejectedCount, errorSound, finalSuccessSound, items.length, handleCancel, playSound]);
 
             const handleQRResult = useCallback((decoded) => {
                 if (scannedCodesRef.current.has(decoded)) return;
@@ -1043,11 +1100,11 @@
                 } else if (decoded.startsWith('user')) {
                     handleScanUser();
                 } else {
-                    playSound('error');
+                    playSound(errorSound);
                     setError('Unrecognized QR code');
                     setTimeout(() => setError(null), 7000);
                 }
-            }, [handleScanContainer, handleScanUser, playSound]);
+            }, [errorSound, handleScanContainer, handleScanUser, playSound]);
 
             const modals = (
                 <>
@@ -1119,9 +1176,15 @@
                                             <MockSettingsPanel
                                                 value={mockRejectedInput}
                                                 onChange={handleMockRejectedChange}
-                                                selectedChime={finalSuccessChime}
-                                                onChimeChange={handleFinalSuccessChimeChange}
-                                                onPreviewChime={previewFinalSuccessChime}
+                                                containerSuccessSound={containerSuccessSound}
+                                                onContainerSuccessSoundChange={handleContainerSuccessSoundChange}
+                                                onPreviewContainerSuccessSound={previewContainerSuccessSound}
+                                                finalSuccessSound={finalSuccessSound}
+                                                onFinalSuccessSoundChange={handleFinalSuccessSoundChange}
+                                                onPreviewFinalSuccessSound={previewFinalSuccessSound}
+                                                errorSound={errorSound}
+                                                onErrorSoundChange={handleErrorSoundChange}
+                                                onPreviewErrorSound={previewErrorSound}
                                             />
                                         </div>
                                     )}
@@ -1163,9 +1226,15 @@
                                     <MockSettingsPanel
                                         value={mockRejectedInput}
                                         onChange={handleMockRejectedChange}
-                                        selectedChime={finalSuccessChime}
-                                        onChimeChange={handleFinalSuccessChimeChange}
-                                        onPreviewChime={previewFinalSuccessChime}
+                                        containerSuccessSound={containerSuccessSound}
+                                        onContainerSuccessSoundChange={handleContainerSuccessSoundChange}
+                                        onPreviewContainerSuccessSound={previewContainerSuccessSound}
+                                        finalSuccessSound={finalSuccessSound}
+                                        onFinalSuccessSoundChange={handleFinalSuccessSoundChange}
+                                        onPreviewFinalSuccessSound={previewFinalSuccessSound}
+                                        errorSound={errorSound}
+                                        onErrorSoundChange={handleErrorSoundChange}
+                                        onPreviewErrorSound={previewErrorSound}
                                     />
                                 </div>
                             )}
