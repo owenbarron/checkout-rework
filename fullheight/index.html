@@ -83,6 +83,12 @@
             'Curious Silver Otter',
             'Brisk Amber Pelican',
         ];
+        const FINAL_SUCCESS_CHIME_OPTIONS = [
+            { value: 'chime1', label: 'Chime 1', path: '../sounds/final-success-chime-1.mp3' },
+            { value: 'chime2', label: 'Chime 2', path: '../sounds/final-success-chime-2.mp3' },
+            { value: 'chime3', label: 'Chime 3', path: '../sounds/final-success-chime-3.mp3' },
+            { value: 'chime4', label: 'Chime 4', path: '../sounds/final-success-chime-4.mp3' },
+        ];
 
         // ============================================================
         // ICONS
@@ -614,12 +620,12 @@
             </button>
         );
 
-        const MockSettingsPanel = ({ value, onChange }) => {
+        const MockSettingsPanel = ({ value, onChange, selectedChime, onChimeChange, onPreviewChime }) => {
             const displayCount = value === '' ? 0 : Number.parseInt(value, 10) || 0;
 
             return (
                 <div style={{
-                    width: 220,
+                    width: 260,
                     backgroundColor: 'rgba(255,255,255,0.97)',
                     border: '1px solid rgba(148, 163, 184, 0.2)',
                     borderRadius: 14,
@@ -653,6 +659,52 @@
                             backgroundColor: 'white',
                         }}
                     />
+                    <label className="font-body font-medium"
+                           style={{ display: 'block', color: '#475569', fontSize: '0.95rem', marginTop: 14, marginBottom: 8 }}>
+                        Final Success Chime
+                    </label>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <select
+                            value={selectedChime}
+                            onChange={onChimeChange}
+                            className="font-body"
+                            style={{
+                                flex: 1,
+                                padding: '10px 12px',
+                                border: '1px solid #dbe3ea',
+                                borderRadius: 10,
+                                fontSize: '0.96rem',
+                                outline: 'none',
+                                color: '#0f172a',
+                                backgroundColor: 'white',
+                            }}
+                        >
+                            {FINAL_SUCCESS_CHIME_OPTIONS.map((option) => (
+                                <option key={option.value} value={option.value}>{option.label}</option>
+                            ))}
+                        </select>
+                        <button
+                            onClick={onPreviewChime}
+                            title="Play selected chime"
+                            style={{
+                                width: 42,
+                                height: 42,
+                                borderRadius: 10,
+                                border: '1px solid #dbe3ea',
+                                backgroundColor: 'white',
+                                color: TEAL,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                cursor: 'pointer',
+                                flexShrink: 0,
+                            }}
+                        >
+                            <svg viewBox="0 0 24 24" fill="currentColor" style={{ width: 16, height: 16, marginLeft: 2 }}>
+                                <path d="M8 5.14v13.72a1 1 0 0 0 1.52.85l10.86-6.86a1 1 0 0 0 0-1.7L9.52 4.29A1 1 0 0 0 8 5.14z"/>
+                            </svg>
+                        </button>
+                    </div>
                 </div>
             );
         };
@@ -827,12 +879,12 @@
             const [isPortrait, setIsPortrait]               = useState(() => window.innerHeight > window.innerWidth);
             const [showMockSettings, setShowMockSettings]   = useState(false);
             const [mockRejectedInput, setMockRejectedInput] = useState('');
+            const [finalSuccessChime, setFinalSuccessChime] = useState('chime1');
 
             const scannedCodesRef = useRef(new Set());
             const audioCtxRef     = useRef(null);
             const soundBuffersRef = useRef({
                 scanSuccess: null,
-                checkoutSuccess: null,
                 error: null,
             });
             const mockPanelRef    = useRef(null);
@@ -869,8 +921,8 @@
                     try {
                         const soundEntries = [
                             ['scanSuccess', '../sounds/successful-scan.m4a'],
-                            ['checkoutSuccess', '../sounds/checkout-complete.mp3'],
                             ['error', '../sounds/error.mp3'],
+                            ...FINAL_SUCCESS_CHIME_OPTIONS.map((option) => [option.value, option.path]),
                         ];
 
                         await Promise.all(soundEntries.map(async ([key, path]) => {
@@ -930,6 +982,14 @@
                 setMockRejectedInput(nextValue);
             }, []);
 
+            const handleFinalSuccessChimeChange = useCallback((event) => {
+                setFinalSuccessChime(event.target.value);
+            }, []);
+
+            const previewFinalSuccessChime = useCallback(() => {
+                playSound(finalSuccessChime);
+            }, [finalSuccessChime, playSound]);
+
             const handleScanContainer = useCallback(() => {
                 playSound('scanSuccess');
                 setTimeLeft(30);
@@ -952,7 +1012,7 @@
                 let outcome;
 
                 if (rejectedCount <= 0) {
-                    playSound('checkoutSuccess');
+                    playSound(finalSuccessChime);
                     outcome = { kind: 'success', user: 'Owen', count: items.length };
                 } else if (rejectedCount >= items.length) {
                     playSound('error');
@@ -973,7 +1033,7 @@
                 setSuccessData(outcome);
                 setStatus('success');
                 setTimeout(() => handleCancel(), outcome.kind === 'success' ? 7000 : 30000);
-            }, [desiredRejectedCount, items.length, handleCancel, playSound]);
+            }, [desiredRejectedCount, finalSuccessChime, items.length, handleCancel, playSound]);
 
             const handleQRResult = useCallback((decoded) => {
                 if (scannedCodesRef.current.has(decoded)) return;
@@ -1056,7 +1116,13 @@
                                 <div ref={mockPanelRef} style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 8 }}>
                                     {showMockSettings && (
                                         <div style={{ position: 'absolute', left: 0, bottom: 'calc(100% + 12px)', zIndex: 40 }}>
-                                            <MockSettingsPanel value={mockRejectedInput} onChange={handleMockRejectedChange} />
+                                            <MockSettingsPanel
+                                                value={mockRejectedInput}
+                                                onChange={handleMockRejectedChange}
+                                                selectedChime={finalSuccessChime}
+                                                onChimeChange={handleFinalSuccessChimeChange}
+                                                onPreviewChime={previewFinalSuccessChime}
+                                            />
                                         </div>
                                     )}
                                     <SettingsButton onPress={() => setShowMockSettings(prev => !prev)} />
@@ -1094,7 +1160,13 @@
                         <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'flex-end' }}>
                             {showMockSettings && (
                                 <div style={{ position: 'absolute', top: 'calc(100% + 12px)', right: 0 }}>
-                                    <MockSettingsPanel value={mockRejectedInput} onChange={handleMockRejectedChange} />
+                                    <MockSettingsPanel
+                                        value={mockRejectedInput}
+                                        onChange={handleMockRejectedChange}
+                                        selectedChime={finalSuccessChime}
+                                        onChimeChange={handleFinalSuccessChimeChange}
+                                        onPreviewChime={previewFinalSuccessChime}
+                                    />
                                 </div>
                             )}
                             <SettingsButton onPress={() => setShowMockSettings(prev => !prev)} />
