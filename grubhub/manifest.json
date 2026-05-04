@@ -1,0 +1,19 @@
+{
+  "name": "USEFULL Checkout Kiosk (Grubhub Lookup)",
+  "short_name": "USEFULL GH",
+  "description": "Look up student by Grubhub receipt and check out reusable containers",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "landscape",
+  "theme_color": "#ffffff",
+  "background_color": "#eef2f3",
+  "icons": [
+    {
+      "src": "../images/USEFULL-Icon-Registered_Color.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

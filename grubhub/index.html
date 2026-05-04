@@ -1,0 +1,1618 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>USEFULL Checkout Kiosk — Grubhub Lookup</title>
+
+    <!-- PWA -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#ffffff">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="USEFULL GH">
+    <link rel="apple-touch-icon" href="../images/USEFULL-Icon-Registered_Color.svg">
+    <link rel="icon" type="image/svg+xml" href="../images/USEFULL-Icon-Registered_Color.svg">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- React -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        display: ['"Plus Jakarta Sans"', 'system-ui', 'sans-serif'],
+                        body:    ['"DM Sans"', 'system-ui', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        * { box-sizing: border-box; }
+        html, body, #root { height: 100%; width: 100%; margin: 0; padding: 0; overflow: hidden; }
+        body { font-family: 'DM Sans', sans-serif; background: #EEF2F3; }
+
+        @keyframes fadeIn    { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes scaleUp   { from { opacity: 0; transform: scale(0.92); } to { opacity: 1; transform: scale(1); } }
+        @keyframes slideUp   { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes countPop  { 0% { transform: scale(1); } 40% { transform: scale(1.18); } 100% { transform: scale(1); } }
+        @keyframes digitPop  { 0% { transform: scale(0.6); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+        @keyframes pulseGlow { 0%, 100% { box-shadow: 0 0 0 0 rgba(0,140,149,0.3); } 50% { box-shadow: 0 0 0 16px rgba(0,140,149,0); } }
+        @keyframes scanLine  {
+            0%   { top: 8%; opacity: 0; }
+            5%   { opacity: 1; }
+            95%  { opacity: 1; }
+            100% { top: 92%; opacity: 0; }
+        }
+        .scan-line { animation: scanLine 2.2s ease-in-out infinite; }
+
+        .camera-content-divider {
+            height: 3px;
+            background: linear-gradient(90deg, transparent, rgba(0,140,149,0.15), rgba(0,140,149,0.3), rgba(0,140,149,0.15), transparent);
+        }
+
+        .keypad-key {
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+            transition: transform 0.08s ease, background-color 0.12s ease;
+        }
+        .keypad-key:active { transform: scale(0.96); background-color: #E6F4F5; }
+
+        .name-pick:hover  { border-color: #008C95 !important; background-color: #F4FBFC !important; }
+        .name-pick:active { transform: scale(0.985); }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef, useCallback, useMemo } = React;
+
+        // ============================================================
+        // CONSTANTS
+        // ============================================================
+        const TEAL       = '#008C95';
+        const TEAL_LIGHT = '#E6F4F5';
+        const GOLD       = '#D69A2D';
+        const SOUND_OPTIONS = [
+            { value: 'error', label: 'error', path: '../sounds/error.mp3' },
+            { value: 'final-success-chime-1', label: 'final-success-chime-1', path: '../sounds/final-success-chime-1.mp3' },
+            { value: 'final-success-chime-2', label: 'final-success-chime-2', path: '../sounds/final-success-chime-2.mp3' },
+            { value: 'final-success-chime-3', label: 'final-success-chime-3', path: '../sounds/final-success-chime-3.mp3' },
+            { value: 'final-success-chime-4', label: 'final-success-chime-4', path: '../sounds/final-success-chime-4.mp3' },
+            { value: 'successful-scan', label: 'successful-scan', path: '../sounds/successful-scan.m4a' },
+        ];
+
+        // Mock student database keyed by last-4 of campus card
+        const MOCK_STUDENTS = {
+            '1234': [{ name: 'Lillian Lyons',  cardEnd: '1234' }],
+            '4010': [{ name: 'Marcus Thompson', cardEnd: '4010' }],
+            '0000': [{ name: 'Test Student',   cardEnd: '0000' }],
+            '8763': [
+                { name: 'Megan Hartford', cardEnd: '8763' },
+                { name: 'Nathan Wells',   cardEnd: '8763' },
+            ],
+            '5678': [
+                { name: 'Aisha Patel',     cardEnd: '5678' },
+                { name: 'Diego Rivera',    cardEnd: '5678' },
+                { name: 'Sofia Nakamura',  cardEnd: '5678' },
+            ],
+        };
+
+        // ============================================================
+        // ICONS
+        // ============================================================
+        const IconX = ({ className, style, strokeWidth = "2.5" }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" className={className} style={style}>
+                <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+        );
+        const IconCheck = ({ className, style }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className={className} style={style}>
+                <path d="M20 6 9 17l-5-5"/>
+            </svg>
+        );
+        const IconAlert = ({ className }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                <circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/>
+            </svg>
+        );
+        const IconExclamation = ({ className, style, color = GOLD }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className={className} style={style}>
+                <rect x="10.2" y="3.2" width="3.6" height="13.2" rx="1.8" fill={color}/>
+                <circle cx="12" cy="20" r="2.1" fill={color}/>
+            </svg>
+        );
+        const IconSettings = ({ className, style }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className={className} style={style}>
+                <circle cx="12" cy="12" r="3.3"/>
+                <path d="M19.4 15a1 1 0 0 0 .2 1.1l.1.1a1.2 1.2 0 0 1 0 1.7l-1.6 1.6a1.2 1.2 0 0 1-1.7 0l-.1-.1a1 1 0 0 0-1.1-.2 1 1 0 0 0-.6.9V20a1.2 1.2 0 0 1-1.2 1.2h-2.3A1.2 1.2 0 0 1 10 20v-.2a1 1 0 0 0-.6-.9 1 1 0 0 0-1.1.2l-.1.1a1.2 1.2 0 0 1-1.7 0l-1.6-1.6a1.2 1.2 0 0 1 0-1.7l.1-.1a1 1 0 0 0 .2-1.1 1 1 0 0 0-.9-.6H4a1.2 1.2 0 0 1-1.2-1.2v-2.3A1.2 1.2 0 0 1 4 9.4h.2a1 1 0 0 0 .9-.6 1 1 0 0 0-.2-1.1l-.1-.1a1.2 1.2 0 0 1 0-1.7l1.6-1.6a1.2 1.2 0 0 1 1.7 0l.1.1a1 1 0 0 0 1.1.2 1 1 0 0 0 .6-.9V4A1.2 1.2 0 0 1 11.1 2.8h2.3A1.2 1.2 0 0 1 14.6 4v.2a1 1 0 0 0 .6.9 1 1 0 0 0 1.1-.2l.1-.1a1.2 1.2 0 0 1 1.7 0l1.6 1.6a1.2 1.2 0 0 1 0 1.7l-.1.1a1 1 0 0 0-.2 1.1 1 1 0 0 0 .9.6h.2A1.2 1.2 0 0 1 21.2 11v2.3a1.2 1.2 0 0 1-1.2 1.2h-.2a1 1 0 0 0-.9.6z"/>
+            </svg>
+        );
+        const IconQR = ({ style, className }) => (
+            <svg viewBox="0 0 24 24" fill="currentColor" style={style} className={className}>
+                <rect x="2"  y="2"  width="9" height="9" rx="1.5" fill="none" stroke="currentColor" strokeWidth="1.5"/>
+                <rect x="4.5" y="4.5" width="4" height="4"/>
+                <rect x="13" y="2"  width="9" height="9" rx="1.5" fill="none" stroke="currentColor" strokeWidth="1.5"/>
+                <rect x="15.5" y="4.5" width="4" height="4"/>
+                <rect x="2"  y="13" width="9" height="9" rx="1.5" fill="none" stroke="currentColor" strokeWidth="1.5"/>
+                <rect x="4.5" y="15.5" width="4" height="4"/>
+                <rect x="13" y="13" width="2.5" height="2.5"/>
+                <rect x="17" y="13" width="2.5" height="2.5"/>
+                <rect x="13" y="17" width="2.5" height="2.5"/>
+                <rect x="17" y="17" width="2.5" height="2.5"/>
+                <rect x="20" y="15" width="2" height="2"/>
+                <rect x="15" y="20" width="2" height="2"/>
+                <rect x="19" y="20" width="3" height="2"/>
+            </svg>
+        );
+        const IconKeypad = ({ style, className }) => (
+            <svg viewBox="0 0 24 24" fill="currentColor" style={style} className={className}>
+                <rect x="3" y="3"  width="5" height="5" rx="1.2"/>
+                <rect x="9.5" y="3"  width="5" height="5" rx="1.2"/>
+                <rect x="16" y="3"  width="5" height="5" rx="1.2"/>
+                <rect x="3" y="9.5" width="5" height="5" rx="1.2"/>
+                <rect x="9.5" y="9.5" width="5" height="5" rx="1.2"/>
+                <rect x="16" y="9.5" width="5" height="5" rx="1.2"/>
+                <rect x="3" y="16" width="5" height="5" rx="1.2"/>
+                <rect x="9.5" y="16" width="5" height="5" rx="1.2"/>
+                <rect x="16" y="16" width="5" height="5" rx="1.2"/>
+            </svg>
+        );
+        const IconBackspace = ({ style }) => (
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={style}>
+                <path d="M21 5H9l-7 7 7 7h12a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2z"/>
+                <line x1="18" y1="9" x2="12" y2="15"/>
+                <line x1="12" y1="9" x2="18" y2="15"/>
+            </svg>
+        );
+        const IconArrowLeft = ({ style }) => (
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={style}>
+                <line x1="19" y1="12" x2="5" y2="12"/>
+                <polyline points="12 19 5 12 12 5"/>
+            </svg>
+        );
+        const IconCup = ({ style }) => (
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" style={style}>
+                <path d="M7 8h10l-.85 11.1A2 2 0 0 1 14.16 21H9.84a2 2 0 0 1-2-1.9L7 8z"/>
+                <line x1="6" y1="8" x2="18" y2="8"/>
+                <path d="M10 4.5c0-.55.45-1 1-1h2c.55 0 1 .45 1 1V8h-4V4.5z"/>
+            </svg>
+        );
+
+        // ============================================================
+        // USEFULL LOGO
+        // ============================================================
+        const UsefullLogo = ({ className, style }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 144" className={className} style={style}>
+                <g>
+                    <path fill="#008c95" d="M88.85,83.9c0,11.31-7.44,18.34-19.4,18.34s-19.4-7.03-19.4-18.34V46.13h-6.49v37.92c0,14.94,10.16,24.6,25.89,24.6s25.89-9.66,25.89-24.6V46.13h-6.49v37.77Z"/>
+                    <path fill="#008c95" d="M141.57,73.67l-.29-.09c-10.6-3.34-17.04-5.84-17.04-12.37,0-6.19,5.89-10.04,15.37-10.04,10.06,0,16.82,4.22,16.82,10.5v1.38h6.41v-1.68c0-9.49-9.77-16.38-23.23-16.38s-22.09,6.64-22.09,16.53c0,11.6,12.64,15.48,21.87,18.31,10.7,3.24,17.72,5.87,17.72,12.6,0,6.19-6.12,10.04-15.98,10.04-10.56,0-17.65-4.22-17.65-10.5v-1.3h-6.41v1.61c0,9.64,9.9,16.38,24.07,16.38s22.77-6.46,22.77-16.45c0-11.74-12.91-15.66-22.34-18.53Z"/>
+                    <polygon fill="#008c95" points="186.25 107.51 229.05 107.51 229.05 101.1 192.74 101.1 192.74 80.48 223.65 80.48 223.65 74.22 192.74 74.22 192.74 52.54 229.05 52.54 229.05 46.13 186.25 46.13 186.25 107.51"/>
+                    <polygon fill="#008c95" points="252.78 106.51 267.93 106.51 267.93 86.18 292.21 86.18 292.21 72.4 267.93 72.4 267.93 61.9 296.86 61.9 296.86 47.13 252.78 47.13 252.78 106.51"/>
+                    <polygon fill="#008c95" points="438.58 47.13 423.43 47.13 423.43 106.51 467.05 106.51 467.05 91.82 438.58 91.82 438.58 47.13"/>
+                    <polygon fill="#008c95" points="503.97 91.82 503.97 47.13 488.82 47.13 488.82 106.51 532.45 106.51 532.45 91.82 503.97 91.82"/>
+                    <path fill="#d5992c" d="M332.04,67.58h0c.02,15.56,12.64,28.17,28.2,28.17s28.18-12.61,28.2-28.17h0v-3.27h-56.4v3.27Z"/>
+                    <path fill="#008c95" d="M395.47,46.41v10.86h0v10.32c-.02,19.41-15.83,35.2-35.24,35.2s-35.22-15.79-35.24-35.21v-31.58h0v-6.5s7.53,7.53,7.53,7.53l4.28-4.28-14.7-14.7-14.7,14.7,4.28,4.28,7.44-7.44v37.99c.03,22.65,18.47,41.07,41.11,41.07s41.08-18.42,41.11-41.06v-21.19h-5.87Z"/>
+                </g>
+                <path fill="#58595b" d="M538.09,42.25c4.09,0,7.41,3.32,7.41,7.41s-3.32,7.41-7.41,7.41-7.41-3.32-7.41-7.41,3.32-7.41,7.41-7.41Zm0,13.84c3.57,0,6.43-2.87,6.43-6.43s-2.87-6.43-6.43-6.43-6.43,2.87-6.43,6.43,2.87,6.43,6.43,6.43Zm2.2-3.02l-1.46-2.53h-2.47v2.53h-.92v-7.16h3.29c1.55,0,2.44,1.07,2.44,2.32,0,.95-.52,1.8-1.43,2.13l1.59,2.71h-1.04Zm-3.93-6.25v2.8h2.35c.98,0,1.55-.7,1.55-1.4s-.58-1.4-1.55-1.4h-2.35Z"/>
+            </svg>
+        );
+
+        // ============================================================
+        // CAMERA BOX (shared with fullheight)
+        // ============================================================
+        const CameraBox = ({ isScanning, onQRResult, isPortrait, borderRadiusOverride }) => {
+            const videoRef     = useRef(null);
+            const containerRef = useRef(null);
+            const canvasRef    = useRef(document.createElement('canvas'));
+            const lastSeenRef  = useRef(null);
+            const [cameraReady, setCameraReady] = useState(false);
+
+            useEffect(() => {
+                let stream = null;
+                const startCamera = async () => {
+                    try {
+                        stream = await navigator.mediaDevices.getUserMedia({
+                            video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 960 } }
+                        });
+                        if (videoRef.current) {
+                            videoRef.current.srcObject = stream;
+                            setCameraReady(true);
+                        }
+                    } catch (err) {
+                        console.warn('Camera not available:', err.message);
+                    }
+                };
+                startCamera();
+                return () => { if (stream) stream.getTracks().forEach(t => t.stop()); };
+            }, []);
+
+            useEffect(() => {
+                if (!isScanning || !onQRResult) return;
+                const canvas = canvasRef.current;
+                const ctx = canvas.getContext('2d', { willReadFrequently: true });
+
+                const scan = () => {
+                    const video     = videoRef.current;
+                    const container = containerRef.current;
+                    if (!video || !container || video.readyState < 2) return;
+
+                    const cW = container.offsetWidth;
+                    const cH = container.offsetHeight;
+                    const vW = video.videoWidth;
+                    const vH = video.videoHeight;
+                    if (!vW || !vH) return;
+
+                    const scale   = Math.max(cW / vW, cH / vH);
+                    const offsetX = (cW - vW * scale) / 2;
+                    const offsetY = (cH - vH * scale) / 2;
+
+                    const cropX = Math.max(0, -offsetX / scale);
+                    const cropY = Math.max(0, -offsetY / scale);
+                    const cropW = Math.min(cW / scale, vW - cropX);
+                    const cropH = Math.min(cH / scale, vH - cropY);
+
+                    canvas.width  = Math.round(cropW);
+                    canvas.height = Math.round(cropH);
+                    ctx.drawImage(video, cropX, cropY, cropW, cropH, 0, 0, canvas.width, canvas.height);
+
+                    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                    const result    = jsQR(imageData.data, canvas.width, canvas.height);
+
+                    if (result) {
+                        let decoded = result.data;
+                        try { decoded = atob(result.data); } catch (_) {}
+                        if (decoded === lastSeenRef.current) return;
+                        lastSeenRef.current = decoded;
+                        onQRResult(decoded);
+                    }
+                };
+
+                const interval = setInterval(scan, 200);
+                return () => clearInterval(interval);
+            }, [isScanning, onQRResult]);
+
+            const borderRadius = borderRadiusOverride !== undefined
+                ? borderRadiusOverride
+                : (isPortrait ? '0 0 24px 24px' : '16px');
+
+            return (
+                <div
+                    ref={containerRef}
+                    className="w-full h-full relative overflow-hidden"
+                    style={{ backgroundColor: '#111', borderRadius }}
+                >
+                    <video
+                        ref={videoRef}
+                        autoPlay playsInline muted
+                        className="absolute inset-0 w-full h-full object-cover"
+                        style={{ transform: 'scaleX(-1)' }}
+                    />
+
+                    {isPortrait && (
+                        <div className="absolute bottom-0 left-0 right-0 pointer-events-none"
+                             style={{ height: 60, background: 'linear-gradient(to bottom, transparent, rgba(0,0,0,0.18))' }} />
+                    )}
+
+                    {!cameraReady && (
+                        <div className="absolute inset-0 flex items-center justify-center">
+                            <div className="flex flex-col items-center gap-3 opacity-20">
+                                <div className="w-20 h-20 border-2 border-white/30 rounded-2xl flex items-center justify-center">
+                                    <div className="w-4 h-4 rounded-full bg-white/30" />
+                                </div>
+                                <span className="text-white/30 font-mono text-xs tracking-[0.3em] uppercase">Camera Feed</span>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Corner brackets */}
+                    {[
+                        { top: 16, left: 16,   borderTop:    `6px solid ${TEAL}`, borderLeft:   `6px solid ${TEAL}`, borderRadius: '6px 0 0 0' },
+                        { top: 16, right: 16,  borderTop:    `6px solid ${TEAL}`, borderRight:  `6px solid ${TEAL}`, borderRadius: '0 6px 0 0' },
+                        { bottom: 16, left: 16,  borderBottom: `6px solid ${TEAL}`, borderLeft:   `6px solid ${TEAL}`, borderRadius: '0 0 0 6px' },
+                        { bottom: 16, right: 16, borderBottom: `6px solid ${TEAL}`, borderRight:  `6px solid ${TEAL}`, borderRadius: '0 0 6px 0' },
+                    ].map((s, i) => (
+                        <div key={i} className="absolute pointer-events-none" style={{ ...s, width: 64, height: 64 }} />
+                    ))}
+
+                    {isScanning && (
+                        <div className="scan-line absolute left-[8%] right-[8%] h-[2px] pointer-events-none"
+                             style={{ backgroundColor: `${TEAL}AA` }} />
+                    )}
+                </div>
+            );
+        };
+
+        // ============================================================
+        // COUNT CARD
+        // ============================================================
+        const CountCard = ({ count, justScanned }) => (
+            <div
+                className="w-full bg-white rounded-2xl border border-gray-100 shadow-lg flex flex-col items-center justify-center"
+                style={{ animation: 'scaleUp 0.4s cubic-bezier(0.16, 1, 0.3, 1)', padding: '20px 12px', gap: 2, overflow: 'visible' }}
+            >
+                <span className="font-display font-bold uppercase text-center"
+                      style={{ color: TEAL, fontSize: '1rem', letterSpacing: '0.12em' }}>
+                    Ready for Checkout
+                </span>
+
+                <div style={{ position: 'relative', display: 'inline-block' }} key={count}>
+                    <span className="font-display font-black text-slate-800 leading-none"
+                          style={{ fontSize: '7rem', lineHeight: 1, display: 'block',
+                                   animation: justScanned ? 'countPop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1)' : 'none' }}>
+                        {count}
+                    </span>
+                    <div style={{
+                        position: 'absolute',
+                        right: 'calc(100% + 0.6rem)',
+                        top: '50%',
+                        width: '3rem',
+                        height: '3rem',
+                        borderRadius: '50%',
+                        backgroundColor: TEAL,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        transform: `translateY(-50%) scale(${justScanned ? 1 : 0})`,
+                        opacity: justScanned ? 1 : 0,
+                        transition: 'opacity 0.25s ease, transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1)',
+                        pointerEvents: 'none',
+                        boxShadow: `0 2px 8px ${TEAL}55`,
+                    }}>
+                        <span className="font-display font-black"
+                              style={{ color: 'white', fontSize: '1.1rem', lineHeight: 1 }}>+1</span>
+                    </div>
+                </div>
+
+                <span className="font-body font-semibold text-gray-400 uppercase tracking-wider"
+                      style={{ fontSize: '1.4rem' }}>
+                    Container{count !== 1 ? 's' : ''}
+                </span>
+            </div>
+        );
+
+        // ============================================================
+        // ERROR TOAST
+        // ============================================================
+        const ErrorToast = ({ message }) => {
+            if (!message) return null;
+            return (
+                <div className="absolute bottom-4 left-4 right-4 z-50 pointer-events-none"
+                     style={{ animation: 'slideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1)' }}>
+                    <div className="flex items-start gap-3 px-5 py-4 rounded-xl shadow-xl border border-red-100 max-w-lg"
+                         style={{ backgroundColor: '#FEF2F2' }}>
+                        <IconAlert className="w-6 h-6 text-red-500 shrink-0 mt-0.5" />
+                        <p className="text-red-700 font-body text-lg font-medium leading-snug">{message}</p>
+                    </div>
+                </div>
+            );
+        };
+
+        // ============================================================
+        // MODE TOGGLE — LAST FOUR | USEFULL QR
+        // ============================================================
+        const ModeToggle = ({ mode, onChange }) => {
+            const Btn = ({ value, icon, label }) => {
+                const active = mode === value;
+                return (
+                    <button
+                        onClick={() => onChange(value)}
+                        className="flex items-center gap-2 font-display font-bold uppercase transition-all"
+                        style={{
+                            padding: '10px 18px',
+                            borderRadius: 999,
+                            backgroundColor: active ? TEAL : 'transparent',
+                            color: active ? '#fff' : '#6B7280',
+                            fontSize: '0.85rem',
+                            letterSpacing: '0.08em',
+                            border: 'none',
+                            cursor: 'pointer',
+                            boxShadow: active ? `0 4px 12px ${TEAL}55` : 'none',
+                        }}
+                    >
+                        {icon}
+                        <span>{label}</span>
+                    </button>
+                );
+            };
+            return (
+                <div style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    backgroundColor: '#fff',
+                    border: '1px solid #e5e7eb',
+                    borderRadius: 999,
+                    padding: 4,
+                    gap: 2,
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+                }}>
+                    <Btn value="lastFour" icon={<IconKeypad style={{ width: 16, height: 16 }} />} label="Last 4" />
+                    <Btn value="qr"       icon={<IconQR      style={{ width: 16, height: 16 }} />} label="USEFULL QR" />
+                </div>
+            );
+        };
+
+        // ============================================================
+        // DIGIT DISPLAY — 4 boxes
+        // ============================================================
+        const DigitDisplay = ({ digits }) => {
+            const padded = digits.padEnd(4, ' ').split('');
+            return (
+                <div style={{ display: 'flex', gap: 14, justifyContent: 'center' }}>
+                    {padded.map((d, i) => {
+                        const filled = d !== ' ';
+                        return (
+                            <div
+                                key={i}
+                                style={{
+                                    width: 72,
+                                    height: 88,
+                                    borderRadius: 14,
+                                    background: '#fff',
+                                    border: `2px solid ${filled ? TEAL : '#e5e7eb'}`,
+                                    boxShadow: filled
+                                        ? `0 6px 18px ${TEAL}30`
+                                        : '0 2px 6px rgba(0,0,0,0.04)',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    transition: 'border-color 0.18s ease, box-shadow 0.18s ease',
+                                }}
+                            >
+                                {filled && (
+                                    <span
+                                        key={`${i}-${d}`}
+                                        className="font-display font-black"
+                                        style={{
+                                            color: '#1e293b',
+                                            fontSize: '3rem',
+                                            lineHeight: 1,
+                                            animation: 'digitPop 0.18s cubic-bezier(0.34, 1.56, 0.64, 1)',
+                                        }}
+                                    >
+                                        {d}
+                                    </span>
+                                )}
+                            </div>
+                        );
+                    })}
+                </div>
+            );
+        };
+
+        // ============================================================
+        // NUMERIC KEYPAD
+        // ============================================================
+        const NumericKeypad = ({ onDigit, onBackspace, disabled }) => {
+            const keyStyle = {
+                width: '100%',
+                aspectRatio: '1.6 / 1',
+                borderRadius: 16,
+                border: '1px solid #e5e7eb',
+                backgroundColor: '#fff',
+                cursor: disabled ? 'default' : 'pointer',
+                opacity: disabled ? 0.5 : 1,
+                boxShadow: '0 2px 6px rgba(0,0,0,0.05)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+            };
+            const digitTextStyle = { fontSize: '2.4rem', color: '#1e293b' };
+
+            const Key = ({ children, onClick, ariaLabel }) => (
+                <button
+                    type="button"
+                    aria-label={ariaLabel}
+                    onClick={() => { if (!disabled) onClick(); }}
+                    className="keypad-key font-display font-bold"
+                    style={keyStyle}
+                >
+                    {children}
+                </button>
+            );
+
+            return (
+                <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(3, 1fr)',
+                    gap: 12,
+                    width: '100%',
+                    maxWidth: 380,
+                }}>
+                    {[1,2,3,4,5,6,7,8,9].map(n => (
+                        <Key key={n} ariaLabel={`Digit ${n}`} onClick={() => onDigit(String(n))}>
+                            <span style={digitTextStyle}>{n}</span>
+                        </Key>
+                    ))}
+                    <div /> {/* spacer */}
+                    <Key ariaLabel="Digit 0" onClick={() => onDigit('0')}>
+                        <span style={digitTextStyle}>0</span>
+                    </Key>
+                    <Key ariaLabel="Backspace" onClick={onBackspace}>
+                        <IconBackspace style={{ width: 32, height: 32, color: '#6B7280' }} />
+                    </Key>
+                </div>
+            );
+        };
+
+        // ============================================================
+        // NAME SELECTION MODAL
+        // ============================================================
+        const NameSelectModal = ({ matches, cardEnd, onSelect, onCancel }) => {
+            if (!matches || matches.length === 0) return null;
+            const single = matches.length === 1;
+
+            return (
+                <div className="absolute inset-0 z-50 flex items-center justify-center"
+                     style={{ backgroundColor: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(8px)',
+                              WebkitBackdropFilter: 'blur(8px)', animation: 'fadeIn 0.2s ease-out' }}>
+                    <div className="bg-white rounded-3xl shadow-2xl mx-6 overflow-hidden"
+                         style={{ animation: 'scaleUp 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                                  width: '100%', maxWidth: 560 }}>
+                        <div style={{ padding: '32px 32px 16px', textAlign: 'center' }}>
+                            <h2 className="font-display font-extrabold"
+                                style={{ color: '#1e293b', fontSize: '1.85rem', lineHeight: 1.2 }}>
+                                {single ? 'Confirm student' : 'Select the student'}
+                            </h2>
+                            <p className="font-body" style={{ color: '#6B7280', fontSize: '1.05rem', marginTop: 6 }}>
+                                Card ending in <span className="font-bold" style={{ color: '#1e293b' }}>{cardEnd}</span>
+                                {!single && <> · {matches.length} matches</>}
+                            </p>
+                        </div>
+
+                        <div style={{ padding: '12px 28px 28px', display: 'flex', flexDirection: 'column', gap: 18 }}>
+                            {matches.map((s, i) => (
+                                <button
+                                    key={`${s.name}-${i}`}
+                                    onClick={() => onSelect(s)}
+                                    className="font-display font-bold name-pick"
+                                    style={{
+                                        width: '100%',
+                                        padding: '20px 22px',
+                                        borderRadius: 16,
+                                        border: `1.5px solid #e2e8f0`,
+                                        backgroundColor: '#fff',
+                                        color: '#1e293b',
+                                        fontSize: '1.55rem',
+                                        cursor: 'pointer',
+                                        boxShadow: '0 2px 8px rgba(15,23,42,0.05)',
+                                        textAlign: 'left',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'space-between',
+                                        gap: 12,
+                                        transition: 'border-color 0.15s ease, background-color 0.15s ease, transform 0.08s ease',
+                                    }}
+                                >
+                                    <span>{s.name}</span>
+                                    <span style={{
+                                        width: 36, height: 36, borderRadius: '50%',
+                                        background: TEAL_LIGHT,
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                        color: TEAL,
+                                    }}>
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 18, height: 18 }}>
+                                            <polyline points="9 18 15 12 9 6"/>
+                                        </svg>
+                                    </span>
+                                </button>
+                            ))}
+                        </div>
+
+                        <div style={{ borderTop: '1px solid #f1f5f9' }}>
+                            <button
+                                onClick={onCancel}
+                                className="font-display font-bold uppercase tracking-wider w-full"
+                                style={{ padding: '18px', fontSize: '0.95rem', color: '#94a3b8',
+                                         background: 'none', border: 'none', cursor: 'pointer' }}
+                            >
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // ============================================================
+        // NO ACCOUNT MODAL
+        // ============================================================
+        const NoAccountModal = ({ cardEnd, onTryAgain, onSwitchToQR }) => (
+            <div className="absolute inset-0 z-50 flex items-center justify-center"
+                 style={{ backgroundColor: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(8px)',
+                          WebkitBackdropFilter: 'blur(8px)', animation: 'fadeIn 0.2s ease-out' }}>
+                <div className="bg-white rounded-3xl shadow-2xl mx-6 overflow-hidden"
+                     style={{ animation: 'scaleUp 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                              width: '100%', maxWidth: 520 }}>
+                    <div style={{ padding: '36px 32px 18px', textAlign: 'center' }}>
+                        <div style={{
+                            width: 72, height: 72, borderRadius: '50%',
+                            background: '#FFF7E6',
+                            margin: '0 auto 18px',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        }}>
+                            <IconExclamation style={{ width: 36, height: 36 }} color={GOLD} />
+                        </div>
+                        <h2 className="font-display font-extrabold"
+                            style={{ color: '#1e293b', fontSize: '1.65rem', lineHeight: 1.25 }}>
+                            No accounts found for card<br/>ending in {cardEnd}
+                        </h2>
+                        <p className="font-body" style={{ color: '#6B7280', fontSize: '1.05rem', marginTop: 12, lineHeight: 1.5 }}>
+                            Set the container aside. Ask the student to download the USEFULL app, sign up, and scan their QR code on their phone when they pick up.
+                        </p>
+                    </div>
+
+                    <div style={{ padding: '8px 24px 24px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                        <button
+                            onClick={onSwitchToQR}
+                            className="font-display font-bold uppercase tracking-wider"
+                            style={{
+                                padding: '18px', borderRadius: 14,
+                                backgroundColor: TEAL, color: '#fff',
+                                fontSize: '1rem', border: 'none', cursor: 'pointer',
+                                boxShadow: `0 6px 18px ${TEAL}40`,
+                                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
+                            }}
+                        >
+                            <IconQR style={{ width: 20, height: 20 }} />
+                            Scan their USEFULL QR instead
+                        </button>
+                        <button
+                            onClick={onTryAgain}
+                            className="font-display font-bold uppercase tracking-wider"
+                            style={{
+                                padding: '16px', borderRadius: 14,
+                                backgroundColor: '#fff', color: '#6B7280',
+                                fontSize: '0.95rem', border: '1.5px solid #e5e7eb', cursor: 'pointer',
+                            }}
+                        >
+                            Try a different number
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+
+        // ============================================================
+        // SUCCESS / OUTCOME
+        // ============================================================
+        const SuccessCard = ({ data, onDone }) => (
+            <div className="bg-white rounded-3xl shadow-2xl w-full overflow-hidden"
+                 style={{ maxWidth: '36.4rem' }}>
+                <div className="p-10 text-center" style={{ backgroundColor: TEAL }}>
+                    <div className="w-32 h-32 bg-white rounded-full flex items-center justify-center mx-auto mb-8 shadow-xl"
+                         style={{ animation: 'pulseGlow 2s ease-in-out infinite' }}>
+                        <IconCheck className="w-16 h-16" style={{ color: TEAL }} />
+                    </div>
+                    <h2 className="text-white font-display text-4xl font-extrabold mb-3">Checkout Complete!</h2>
+                    <p className="text-white/80 font-body text-xl mb-10 leading-relaxed">
+                        <span className="font-bold text-white text-3xl">{data.count}</span> container{data.count > 1 ? 's' : ''} checked out to<br/>
+                        <span className="font-bold text-white text-2xl border-b-2 border-white/30 pb-0.5">{data.user}</span>
+                    </p>
+                    <button onClick={onDone}
+                            className="w-full py-5 rounded-xl font-display font-bold text-xl uppercase tracking-wider shadow-lg bg-white hover:bg-gray-50 transition-colors"
+                            style={{ color: TEAL }}>
+                        Next student
+                    </button>
+                </div>
+            </div>
+        );
+
+        const OutcomeModal = ({ data, onDone }) => {
+            if (!data) return null;
+            return (
+                <div className="absolute inset-0 z-50 flex items-center justify-center"
+                     style={{ backgroundColor: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(8px)',
+                              WebkitBackdropFilter: 'blur(8px)', animation: 'fadeIn 0.2s ease-out' }}>
+                    <div className="w-full mx-6"
+                         style={{ animation: 'scaleUp 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)', maxWidth: '36.4rem' }}>
+                        <SuccessCard data={data} onDone={onDone} />
+                    </div>
+                </div>
+            );
+        };
+
+        // ============================================================
+        // SHARED BUTTONS
+        // ============================================================
+        const CloseButton = ({ onPress }) => (
+            <button
+                onClick={onPress}
+                style={{
+                    width: 30, height: 30, borderRadius: '50%', flexShrink: 0,
+                    backgroundColor: '#EEF2F3',
+                    border: '1px solid rgba(0,0,0,0.18)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    cursor: 'pointer',
+                }}
+            >
+                <IconX style={{ width: 10, height: 10, color: '#c8d0d8' }} strokeWidth="1.5" />
+            </button>
+        );
+
+        const SettingsButton = ({ onPress }) => (
+            <button
+                onClick={onPress}
+                style={{
+                    width: 30, height: 30, borderRadius: '50%', flexShrink: 0,
+                    backgroundColor: '#EEF2F3',
+                    border: '1px solid rgba(0,0,0,0.18)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    cursor: 'pointer',
+                }}
+            >
+                <IconSettings style={{ width: 14, height: 14, color: '#c8d0d8' }} />
+            </button>
+        );
+
+        const CupScanButton = ({ onPress, disabled }) => (
+            <button
+                onClick={onPress}
+                disabled={disabled}
+                title="Simulate container scan"
+                style={{
+                    width: 30, height: 30, borderRadius: '50%', flexShrink: 0,
+                    backgroundColor: '#EEF2F3',
+                    border: '1px solid rgba(0,0,0,0.18)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    cursor: disabled ? 'default' : 'pointer',
+                    opacity: disabled ? 0.4 : 1,
+                    transition: 'opacity 0.15s ease, transform 0.08s ease',
+                }}
+            >
+                <IconCup style={{ width: 14, height: 14, color: '#c8d0d8' }} />
+            </button>
+        );
+
+        const CircularCancelButton = ({ timeLeft, total = 60, onCancel }) => {
+            const radius = 13;
+            const circumference = 2 * Math.PI * radius;
+            const fraction = Math.max(0, Math.min(1, timeLeft / total));
+            const offset = circumference * (1 - fraction);
+            const isLow = timeLeft <= 10;
+            const stroke = isLow ? '#ef4444' : '#6b7280';
+
+            return (
+                <button
+                    onClick={onCancel}
+                    className="flex items-center gap-3 rounded-xl transition-all"
+                    style={{
+                        padding: '10px 18px 10px 12px',
+                        border: `1.5px solid ${isLow ? '#fca5a5' : '#e5e7eb'}`,
+                        backgroundColor: isLow ? '#FEF2F2' : 'white',
+                        cursor: 'pointer',
+                        transition: 'border-color 0.3s, background-color 0.3s',
+                    }}
+                >
+                    <svg viewBox="0 0 32 32" style={{ width: 26, height: 26, flexShrink: 0 }}>
+                        <circle cx="16" cy="16" r={radius} fill="none"
+                                stroke={isLow ? '#fee2e2' : '#e5e7eb'} strokeWidth="3" />
+                        <circle cx="16" cy="16" r={radius} fill="none"
+                                stroke={stroke} strokeWidth="3" strokeLinecap="round"
+                                strokeDasharray={circumference}
+                                strokeDashoffset={offset}
+                                transform="rotate(-90 16 16)"
+                                style={{ transition: 'stroke-dashoffset 1s linear, stroke 0.3s' }} />
+                    </svg>
+                    <span className="font-display font-bold uppercase tracking-wider"
+                          style={{ fontSize: '1rem', color: isLow ? '#ef4444' : '#6b7280' }}>
+                        Cancel
+                    </span>
+                </button>
+            );
+        };
+
+        const DoneButton = ({ count, onClick }) => {
+            const enabled = count > 0;
+            return (
+                <button
+                    onClick={onClick}
+                    className="font-display font-extrabold uppercase tracking-wider transition-all"
+                    style={{
+                        width: '100%',
+                        padding: '22px 28px',
+                        borderRadius: 18,
+                        backgroundColor: enabled ? TEAL : '#cbd5e1',
+                        color: '#fff',
+                        fontSize: '1.5rem',
+                        letterSpacing: '0.05em',
+                        border: 'none',
+                        cursor: enabled ? 'pointer' : 'default',
+                        boxShadow: enabled ? `0 10px 28px ${TEAL}55` : 'none',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 14,
+                    }}
+                >
+                    <IconCheck className="w-7 h-7" style={{ color: '#fff' }} />
+                    Done
+                </button>
+            );
+        };
+
+        // ============================================================
+        // STUDENT BANNER (during scanning phase)
+        // ============================================================
+        const StudentBanner = ({ name }) => (
+            <div style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 12,
+                padding: '8px 16px 8px 8px',
+                borderRadius: 999,
+                background: TEAL_LIGHT,
+                border: `1px solid ${TEAL}33`,
+            }}>
+                <div style={{
+                    width: 32, height: 32, borderRadius: '50%',
+                    background: TEAL,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    color: '#fff',
+                }}>
+                    <IconCheck className="w-4 h-4" />
+                </div>
+                <span className="font-display font-extrabold"
+                      style={{ color: TEAL, fontSize: '1.1rem' }}>
+                    {name}
+                </span>
+            </div>
+        );
+
+        // ============================================================
+        // ACCESS CODE MODAL (shared)
+        // ============================================================
+        const AccessCodeModal = ({ isOpen, onClose }) => {
+            const [code, setCode] = React.useState('');
+            const [showCode, setShowCode] = React.useState(false);
+            const inputRef = React.useRef(null);
+
+            React.useEffect(() => {
+                if (isOpen) { setCode(''); setTimeout(() => inputRef.current?.focus(), 100); }
+            }, [isOpen]);
+
+            if (!isOpen) return null;
+
+            const handleChange = (e) => {
+                const val = e.target.value.replace(/\D/g, '').slice(0, 4);
+                setCode(val);
+            };
+
+            return (
+                <div className="absolute inset-0 z-50 flex items-center justify-center"
+                     style={{ backgroundColor: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(8px)',
+                              WebkitBackdropFilter: 'blur(8px)', animation: 'fadeIn 0.2s ease-out' }}
+                     onClick={onClose}>
+                    <div className="bg-white rounded-3xl shadow-2xl w-full mx-6 overflow-hidden"
+                         style={{ animation: 'scaleUp 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)', maxWidth: 420 }}
+                         onClick={e => e.stopPropagation()}>
+                        <div style={{ padding: '28px 28px 20px' }}>
+                            <h2 className="font-display font-extrabold text-center"
+                                style={{ color: '#1e293b', fontSize: '1.2rem', lineHeight: 1.3 }}>
+                                Enter the checkout station access code
+                            </h2>
+                        </div>
+                        <div style={{ padding: '0 28px 24px' }}>
+                            <div className="relative">
+                                <input
+                                    ref={inputRef}
+                                    type={showCode ? 'text' : 'password'}
+                                    inputMode="numeric"
+                                    pattern="[0-9]*"
+                                    maxLength={4}
+                                    value={code}
+                                    onChange={handleChange}
+                                    placeholder="Enter code here"
+                                    className="w-full font-body"
+                                    style={{
+                                        padding: '14px 48px 14px 16px',
+                                        border: `1.5px solid ${code.length === 4 ? TEAL : '#e2e8f0'}`,
+                                        borderRadius: 12,
+                                        fontSize: '1.1rem',
+                                        outline: 'none',
+                                        letterSpacing: code.length && !showCode ? '0.4em' : 'normal',
+                                        transition: 'border-color 0.2s',
+                                    }}
+                                />
+                                <button
+                                    onClick={() => setShowCode(v => !v)}
+                                    style={{ position: 'absolute', right: 14, top: '50%',
+                                             transform: 'translateY(-50%)', background: 'none',
+                                             border: 'none', cursor: 'pointer', padding: 4, color: '#94a3b8' }}
+                                >
+                                    {showCode ? (
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 20, height: 20 }}>
+                                            <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/>
+                                        </svg>
+                                    ) : (
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 20, height: 20 }}>
+                                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+                                        </svg>
+                                    )}
+                                </button>
+                            </div>
+                        </div>
+                        <div style={{ borderTop: '1px solid #f1f5f9' }}>
+                            <div className="flex">
+                                <button
+                                    onClick={onClose}
+                                    className="flex-1 font-display font-bold uppercase tracking-wider"
+                                    style={{ padding: '18px', fontSize: '0.9rem', color: '#94a3b8',
+                                             background: 'none', border: 'none', cursor: 'pointer' }}
+                                >
+                                    Cancel
+                                </button>
+                                <div style={{ width: 1, backgroundColor: '#f1f5f9' }} />
+                                <button
+                                    onClick={code.length === 4 ? onClose : undefined}
+                                    className="flex-1 font-display font-bold uppercase tracking-wider"
+                                    style={{ padding: '18px', fontSize: '0.9rem',
+                                             color: code.length === 4 ? TEAL : '#cbd5e1',
+                                             background: 'none', border: 'none',
+                                             cursor: code.length === 4 ? 'pointer' : 'default',
+                                             transition: 'color 0.2s' }}
+                                >
+                                    Submit
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // ============================================================
+        // SETTINGS PANEL (sounds + mock card buttons)
+        // ============================================================
+        const SoundSelectRow = ({ label, value, onChange, onPreview }) => (
+            <>
+                <label className="font-body font-medium"
+                       style={{ display: 'block', color: '#475569', fontSize: '0.95rem', marginTop: 14, marginBottom: 8 }}>
+                    {label}
+                </label>
+                <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 42px', alignItems: 'center', gap: 8 }}>
+                    <select
+                        value={value}
+                        onChange={onChange}
+                        className="font-body"
+                        style={{
+                            width: '100%', minWidth: 0, padding: '10px 12px',
+                            border: '1px solid #dbe3ea', borderRadius: 10,
+                            fontSize: '0.96rem', outline: 'none',
+                            color: '#0f172a', backgroundColor: 'white',
+                        }}
+                    >
+                        {SOUND_OPTIONS.map(option => (
+                            <option key={option.value} value={option.value}>{option.label}</option>
+                        ))}
+                    </select>
+                    <button
+                        onClick={onPreview}
+                        title={`Play ${label}`}
+                        style={{
+                            width: 42, height: 42, borderRadius: 10,
+                            border: '1px solid #dbe3ea', backgroundColor: 'white',
+                            color: TEAL, display: 'flex',
+                            alignItems: 'center', justifyContent: 'center',
+                            cursor: 'pointer', flexShrink: 0,
+                        }}
+                    >
+                        <svg viewBox="0 0 24 24" fill="currentColor" style={{ width: 16, height: 16, marginLeft: 2 }}>
+                            <path d="M8 5.14v13.72a1 1 0 0 0 1.52.85l10.86-6.86a1 1 0 0 0 0-1.7L9.52 4.29A1 1 0 0 0 8 5.14z"/>
+                        </svg>
+                    </button>
+                </div>
+            </>
+        );
+
+        const MockSettingsPanel = ({
+            containerSuccessSound,
+            onContainerSuccessSoundChange,
+            onPreviewContainerSuccessSound,
+            finalSuccessSound,
+            onFinalSuccessSoundChange,
+            onPreviewFinalSuccessSound,
+            errorSound,
+            onErrorSoundChange,
+            onPreviewErrorSound,
+            onFillCard,
+        }) => {
+            return (
+                <div style={{
+                    width: 320,
+                    maxWidth: 'min(320px, calc(100vw - 48px))',
+                    backgroundColor: 'rgba(255,255,255,0.97)',
+                    border: '1px solid rgba(148, 163, 184, 0.2)',
+                    borderRadius: 14,
+                    boxShadow: '0 18px 40px rgba(15, 23, 42, 0.14)',
+                    padding: '14px 14px 12px',
+                    backdropFilter: 'blur(10px)',
+                    WebkitBackdropFilter: 'blur(10px)',
+                }}>
+                    <div className="font-display font-bold uppercase tracking-wider"
+                         style={{ color: '#94a3b8', fontSize: '0.72rem', marginBottom: 8 }}>
+                        Mock card lookups
+                    </div>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                        {Object.entries(MOCK_STUDENTS).map(([code, list]) => (
+                            <button
+                                key={code}
+                                onClick={() => onFillCard(code)}
+                                className="font-body"
+                                style={{
+                                    padding: '7px 11px',
+                                    border: '1px solid #dbe3ea',
+                                    borderRadius: 8,
+                                    fontSize: '0.85rem',
+                                    backgroundColor: 'white',
+                                    cursor: 'pointer',
+                                    color: '#0f172a',
+                                }}
+                                title={list.map(s => s.name).join(', ')}
+                            >
+                                {code} ({list.length})
+                            </button>
+                        ))}
+                        <button
+                            onClick={() => onFillCard('9999')}
+                            className="font-body"
+                            style={{
+                                padding: '7px 11px',
+                                border: '1px solid #fecaca',
+                                borderRadius: 8,
+                                fontSize: '0.85rem',
+                                backgroundColor: '#FEF2F2',
+                                cursor: 'pointer',
+                                color: '#991b1b',
+                            }}
+                            title="No matching account"
+                        >
+                            9999 (none)
+                        </button>
+                    </div>
+
+                    <div className="font-display font-bold uppercase tracking-wider"
+                         style={{ color: '#94a3b8', fontSize: '0.72rem', marginTop: 16, marginBottom: 6 }}>
+                        Sounds
+                    </div>
+                    <SoundSelectRow
+                        label="Container Success"
+                        value={containerSuccessSound}
+                        onChange={onContainerSuccessSoundChange}
+                        onPreview={onPreviewContainerSuccessSound}
+                    />
+                    <SoundSelectRow
+                        label="Final Success"
+                        value={finalSuccessSound}
+                        onChange={onFinalSuccessSoundChange}
+                        onPreview={onPreviewFinalSuccessSound}
+                    />
+                    <SoundSelectRow
+                        label="Error"
+                        value={errorSound}
+                        onChange={onErrorSoundChange}
+                        onPreview={onPreviewErrorSound}
+                    />
+                </div>
+            );
+        };
+
+        // ============================================================
+        // MAIN APP
+        // ============================================================
+        const App = () => {
+            // Flow state
+            const [mode, setMode]                   = useState('lastFour'); // 'lastFour' | 'qr'
+            const [phase, setPhase]                 = useState('lookup');    // 'lookup' | 'selectName' | 'noAccount' | 'scanning' | 'success'
+            const [digits, setDigits]               = useState('');
+            const [matches, setMatches]             = useState([]);
+            const [cardEnd, setCardEnd]             = useState('');          // last 4 used for current lookup (display)
+            const [selectedUser, setSelectedUser]   = useState(null);
+
+            // Container scan state
+            const [items, setItems]                 = useState([]);
+            const [error, setError]                 = useState(null);
+            const [timeLeft, setTimeLeft]           = useState(60);
+            const [successData, setSuccessData]     = useState(null);
+            const [justScanned, setJustScanned]     = useState(false);
+
+            // Misc UI state
+            const [showAccessModal, setShowAccessModal]     = useState(false);
+            const [isPortrait, setIsPortrait]               = useState(() => window.innerHeight > window.innerWidth);
+            const [showMockSettings, setShowMockSettings]   = useState(false);
+
+            // Sound prefs
+            const [containerSuccessSound, setContainerSuccessSound] = useState('successful-scan');
+            const [finalSuccessSound, setFinalSuccessSound]         = useState('final-success-chime-1');
+            const [errorSound, setErrorSound]                       = useState('error');
+
+            const scannedCodesRef = useRef(new Set());
+            const audioCtxRef     = useRef(null);
+            const soundBuffersRef = useRef({});
+            const mockPanelRef    = useRef(null);
+
+            // Orientation
+            useEffect(() => {
+                const mq = window.matchMedia('(orientation: portrait)');
+                const handler = (e) => setIsPortrait(e.matches);
+                mq.addEventListener('change', handler);
+                return () => mq.removeEventListener('change', handler);
+            }, []);
+
+            // Click-outside for settings panel
+            useEffect(() => {
+                if (!showMockSettings) return;
+                const handlePointerDown = (event) => {
+                    if (!mockPanelRef.current?.contains(event.target)) {
+                        setShowMockSettings(false);
+                    }
+                };
+                document.addEventListener('mousedown', handlePointerDown);
+                document.addEventListener('touchstart', handlePointerDown);
+                return () => {
+                    document.removeEventListener('mousedown', handlePointerDown);
+                    document.removeEventListener('touchstart', handlePointerDown);
+                };
+            }, [showMockSettings]);
+
+            // Audio unlock
+            useEffect(() => {
+                const unlock = async () => {
+                    if (audioCtxRef.current) return;
+                    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                    audioCtxRef.current = ctx;
+                    try {
+                        await Promise.all(SOUND_OPTIONS.map(async ({ value, path }) => {
+                            const res = await fetch(path);
+                            if (!res.ok) throw new Error(`Failed to load ${path}`);
+                            const buf = await res.arrayBuffer();
+                            soundBuffersRef.current[value] = await ctx.decodeAudioData(buf);
+                        }));
+                    } catch (_) {}
+                };
+                document.addEventListener('touchstart', unlock, { once: true });
+                document.addEventListener('click',      unlock, { once: true });
+                return () => {
+                    document.removeEventListener('touchstart', unlock);
+                    document.removeEventListener('click',      unlock);
+                };
+            }, []);
+
+            const playSound = useCallback((soundKey) => {
+                const ctx = audioCtxRef.current;
+                const buffer = soundBuffersRef.current[soundKey];
+                if (!ctx || !buffer) return;
+                if (ctx.state === 'suspended') ctx.resume().catch(() => {});
+                const src = ctx.createBufferSource();
+                src.buffer = buffer;
+                src.connect(ctx.destination);
+                src.start(0);
+            }, []);
+
+            // Reset to start
+            const resetAll = useCallback(() => {
+                setMode('lastFour');
+                setPhase('lookup');
+                setDigits('');
+                setMatches([]);
+                setCardEnd('');
+                setSelectedUser(null);
+                setItems([]);
+                setError(null);
+                setTimeLeft(60);
+                setSuccessData(null);
+                setJustScanned(false);
+                scannedCodesRef.current.clear();
+            }, []);
+
+            // Cancel current student (drop scans + go back to lookup)
+            const handleCancelStudent = useCallback(() => {
+                setItems([]);
+                setSelectedUser(null);
+                setDigits('');
+                setMatches([]);
+                setCardEnd('');
+                setError(null);
+                setTimeLeft(60);
+                setJustScanned(false);
+                setPhase('lookup');
+                scannedCodesRef.current.clear();
+            }, []);
+
+            // Lookup a 4-digit card number
+            const performLookup = useCallback((code) => {
+                const results = MOCK_STUDENTS[code] || [];
+                setMatches(results);
+                setCardEnd(code);
+                if (results.length === 0) {
+                    playSound(errorSound);
+                    setPhase('noAccount');
+                } else {
+                    setPhase('selectName');
+                }
+            }, [errorSound, playSound]);
+
+            // Keypad handlers
+            const handleDigit = useCallback((d) => {
+                setDigits(prev => {
+                    if (prev.length >= 4) return prev;
+                    const next = prev + d;
+                    if (next.length === 4) {
+                        // defer lookup so user sees the digit first
+                        setTimeout(() => performLookup(next), 180);
+                    }
+                    return next;
+                });
+            }, [performLookup]);
+
+            const handleBackspace = useCallback(() => {
+                setDigits(prev => prev.slice(0, -1));
+            }, []);
+
+            const handleFillCard = useCallback((code) => {
+                setShowMockSettings(false);
+                setDigits(code);
+                setTimeout(() => performLookup(code), 180);
+            }, [performLookup]);
+
+            // Confirm a student (from name select modal)
+            const handleSelectStudent = useCallback((student) => {
+                setSelectedUser(student);
+                setPhase('scanning');
+                setItems([]);
+                setTimeLeft(60);
+                scannedCodesRef.current.clear();
+            }, []);
+
+            // No-account: switch to QR mode for this student
+            const handleSwitchToQRFromNoAccount = useCallback(() => {
+                setMode('qr');
+                setPhase('lookup');
+                setDigits('');
+                setMatches([]);
+                setCardEnd('');
+            }, []);
+
+            const handleTryAgain = useCallback(() => {
+                setPhase('lookup');
+                setDigits('');
+                setMatches([]);
+                setCardEnd('');
+            }, []);
+
+            // Container scan
+            const handleScanContainer = useCallback(() => {
+                playSound(containerSuccessSound);
+                setTimeLeft(60);
+                setItems(prev => [...prev, { id: Date.now() }]);
+                setError(null);
+                setJustScanned(true);
+                setTimeout(() => setJustScanned(false), 1500);
+            }, [containerSuccessSound, playSound]);
+
+            // Mock cup scan trigger (footer button) — only meaningful while scanning
+            const handleMockCupScan = useCallback(() => {
+                if (phase !== 'scanning') return;
+                handleScanContainer();
+            }, [phase, handleScanContainer]);
+
+            // Done = finalize checkout
+            const handleDone = useCallback(() => {
+                if (items.length === 0 || !selectedUser) {
+                    playSound(errorSound);
+                    setError('Scan at least one container before tapping Done.');
+                    setTimeout(() => setError(null), 3000);
+                    return;
+                }
+                playSound(finalSuccessSound);
+                const outcome = { kind: 'success', user: selectedUser.name, count: items.length };
+                setSuccessData(outcome);
+                setPhase('success');
+                setTimeout(() => resetAll(), 6000);
+            }, [errorSound, finalSuccessSound, items.length, playSound, resetAll, selectedUser]);
+
+            // QR results
+            const handleQRResult = useCallback((decoded) => {
+                if (scannedCodesRef.current.has(decoded)) return;
+                scannedCodesRef.current.add(decoded);
+
+                if (phase === 'lookup' && mode === 'qr') {
+                    if (decoded.startsWith('user')) {
+                        // Authenticate via QR — mock student
+                        const user = { name: 'Lillian Lyons', cardEnd: '••••' };
+                        setSelectedUser(user);
+                        setItems([]);
+                        setTimeLeft(60);
+                        scannedCodesRef.current.clear();
+                        setPhase('scanning');
+                    } else {
+                        playSound(errorSound);
+                        setError('Scan a USEFULL ID QR code (starts with "user").');
+                        setTimeout(() => setError(null), 5000);
+                    }
+                    return;
+                }
+
+                if (phase === 'scanning') {
+                    if (decoded.startsWith('cup')) {
+                        handleScanContainer();
+                    } else if (decoded.startsWith('user')) {
+                        playSound(errorSound);
+                        setError('Already authenticated — scan containers now.');
+                        setTimeout(() => setError(null), 3000);
+                    } else {
+                        playSound(errorSound);
+                        setError('Unrecognized QR code');
+                        setTimeout(() => setError(null), 5000);
+                    }
+                    return;
+                }
+            }, [phase, mode, errorSound, handleScanContainer, playSound]);
+
+            // Inactivity timeout while scanning containers
+            useEffect(() => {
+                if (phase !== 'scanning') { setTimeLeft(60); return; }
+                const timer = setInterval(() => {
+                    setTimeLeft(prev => {
+                        if (prev <= 1) { handleCancelStudent(); return 60; }
+                        return prev - 1;
+                    });
+                }, 1000);
+                return () => clearInterval(timer);
+            }, [phase, handleCancelStudent]);
+
+            // Mode toggle: clear in-progress lookup
+            const handleModeChange = useCallback((next) => {
+                if (phase !== 'lookup') return; // only switchable while looking up
+                setMode(next);
+                setDigits('');
+                setMatches([]);
+                setCardEnd('');
+            }, [phase]);
+
+            // Camera should run when in QR-lookup mode OR while scanning containers
+            const cameraActive = (phase === 'lookup' && mode === 'qr') || phase === 'scanning';
+
+            // Physical keyboard input — useful for demos
+            useEffect(() => {
+                if (phase !== 'lookup' || mode !== 'lastFour') return;
+                const onKey = (e) => {
+                    if (e.metaKey || e.ctrlKey || e.altKey) return;
+                    if (showAccessModal || showMockSettings) return;
+                    if (/^[0-9]$/.test(e.key)) {
+                        e.preventDefault();
+                        handleDigit(e.key);
+                    } else if (e.key === 'Backspace' || e.key === 'Delete') {
+                        e.preventDefault();
+                        handleBackspace();
+                    }
+                };
+                window.addEventListener('keydown', onKey);
+                return () => window.removeEventListener('keydown', onKey);
+            }, [phase, mode, showAccessModal, showMockSettings, handleDigit, handleBackspace]);
+
+            // ========================================================
+            // RENDER
+            // ========================================================
+            const showKeypad   = phase === 'lookup' && mode === 'lastFour';
+            const showQRLookup = phase === 'lookup' && mode === 'qr';
+            const showScanning = phase === 'scanning';
+
+            return (
+                <div className="h-full w-full flex flex-col overflow-hidden select-none relative"
+                     style={{
+                         backgroundColor: '#EEF2F3',
+                         padding: isPortrait ? '14px 16px 10px' : '18px 22px 14px',
+                         gap: isPortrait ? 12 : 16,
+                     }}>
+
+                    {/* HEADER */}
+                    <div style={{
+                        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                        gap: 16, width: '100%',
+                    }}>
+                        <div className="flex flex-col items-start">
+                            <UsefullLogo style={{ height: isPortrait ? '2.6rem' : '3.2rem' }} className="w-auto" />
+                            <p className="font-display font-bold uppercase tracking-[0.2em]"
+                               style={{ color: TEAL, fontSize: isPortrait ? '0.75rem' : '0.85rem',
+                                        marginTop: '-0.5rem', paddingLeft: '0.78rem' }}>
+                                Front of House
+                            </p>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 12 }}>
+                            {phase === 'lookup' && (
+                                <ModeToggle mode={mode} onChange={handleModeChange} />
+                            )}
+                            {phase === 'scanning' && selectedUser && (
+                                <StudentBanner name={selectedUser.name} />
+                            )}
+                        </div>
+                    </div>
+
+                    {/* BODY — single persistent container; sub-views toggle visibility */}
+                    <div style={{ flex: 1, minHeight: 0, position: 'relative' }}>
+
+                        {/* KEYPAD VIEW */}
+                        <div style={{
+                            position: 'absolute', inset: 0,
+                            display: showKeypad ? 'flex' : 'none',
+                            flexDirection: 'column',
+                            alignItems: 'center', justifyContent: 'center',
+                            gap: isPortrait ? 18 : 22,
+                            padding: isPortrait ? '8px 0' : '4px 0',
+                        }}>
+                            <div className="text-center" style={{ padding: '0 12px' }}>
+                                <h1 className="font-display font-extrabold leading-tight"
+                                    style={{ color: TEAL, fontSize: isPortrait ? '2.2rem' : '2.6rem' }}>
+                                    Look up student
+                                </h1>
+                                <p className="font-body mt-1.5"
+                                   style={{ color: '#6B7280', fontSize: isPortrait ? '1rem' : '1.15rem' }}>
+                                    Enter the last 4 digits of the campus card on the Grubhub receipt
+                                </p>
+                            </div>
+                            <DigitDisplay digits={digits} />
+                            <NumericKeypad
+                                onDigit={handleDigit}
+                                onBackspace={handleBackspace}
+                                disabled={digits.length >= 4}
+                            />
+                        </div>
+
+                        {/* CAMERA VIEW — persistent for both QR-lookup and container-scanning */}
+                        <div style={{
+                            position: 'absolute', inset: 0,
+                            display: (showQRLookup || showScanning) ? 'flex' : 'none',
+                            flexDirection: isPortrait ? 'column' : 'row',
+                            gap: 20,
+                            alignItems: 'stretch',
+                        }}>
+                            <div style={{
+                                flex: isPortrait ? '0 0 60%' : '0 0 60%',
+                                minHeight: isPortrait ? 220 : 'auto',
+                                position: 'relative',
+                            }}>
+                                <CameraBox
+                                    isScanning={cameraActive}
+                                    onQRResult={handleQRResult}
+                                    isPortrait={false}
+                                    borderRadiusOverride="20px"
+                                />
+                                <ErrorToast message={error} />
+                            </div>
+
+                            {/* Right side prompt — content swaps based on phase */}
+                            {showQRLookup && (
+                                <div style={{
+                                    flex: 1,
+                                    display: 'flex', flexDirection: 'column',
+                                    alignItems: 'center', justifyContent: 'center',
+                                    textAlign: 'center', padding: '12px', gap: 12,
+                                }}>
+                                    <div style={{
+                                        width: 64, height: 64, borderRadius: 18,
+                                        background: TEAL_LIGHT,
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                        color: TEAL,
+                                    }}>
+                                        <IconQR style={{ width: 32, height: 32 }} />
+                                    </div>
+                                    <h1 className="font-display font-extrabold leading-tight"
+                                        style={{ color: TEAL, fontSize: isPortrait ? '1.85rem' : '2.4rem' }}>
+                                        Scan the student's<br/>USEFULL QR
+                                    </h1>
+                                    <p className="font-body"
+                                       style={{ color: '#6B7280', fontSize: isPortrait ? '1rem' : '1.1rem', maxWidth: 360 }}>
+                                        Have them open the USEFULL app and hold their QR code in front of the camera.
+                                    </p>
+                                </div>
+                            )}
+
+                            {showScanning && (
+                                <div style={{
+                                    flex: 1,
+                                    display: 'flex', flexDirection: 'column',
+                                    alignItems: 'center', justifyContent: 'center',
+                                    gap: 16, padding: '8px', textAlign: 'center',
+                                }}>
+                                    <div>
+                                        <h1 className="font-display font-extrabold leading-tight"
+                                            style={{ color: TEAL, fontSize: isPortrait ? '2.1rem' : '2.6rem' }}>
+                                            Scan user containers
+                                        </h1>
+                                        <p className="font-body mt-2"
+                                           style={{ color: '#6B7280', fontSize: isPortrait ? '1.05rem' : '1.2rem' }}>
+                                            Hold each USEFULL container in front of the camera, then tap Done.
+                                        </p>
+                                    </div>
+                                    <div style={{ width: '100%', maxWidth: 340, display: 'flex', flexDirection: 'column', gap: 14 }}>
+                                        <CountCard count={items.length} justScanned={justScanned} />
+                                        <DoneButton count={items.length} onClick={handleDone} />
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                    </div>
+
+                    {/* FOOTER */}
+                    <div className="shrink-0 flex items-center gap-3"
+                         style={{ borderTop: '1px solid rgba(0,140,149,0.12)', paddingTop: 12 }}>
+                        <div ref={mockPanelRef} style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 8 }}>
+                            {showMockSettings && (
+                                <div style={{
+                                    position: 'absolute',
+                                    left: 0, bottom: 'calc(100% + 12px)',
+                                    zIndex: 40,
+                                }}>
+                                    <MockSettingsPanel
+                                        containerSuccessSound={containerSuccessSound}
+                                        onContainerSuccessSoundChange={(e) => setContainerSuccessSound(e.target.value)}
+                                        onPreviewContainerSuccessSound={() => playSound(containerSuccessSound)}
+                                        finalSuccessSound={finalSuccessSound}
+                                        onFinalSuccessSoundChange={(e) => setFinalSuccessSound(e.target.value)}
+                                        onPreviewFinalSuccessSound={() => playSound(finalSuccessSound)}
+                                        errorSound={errorSound}
+                                        onErrorSoundChange={(e) => setErrorSound(e.target.value)}
+                                        onPreviewErrorSound={() => playSound(errorSound)}
+                                        onFillCard={handleFillCard}
+                                    />
+                                </div>
+                            )}
+                            <SettingsButton onPress={() => setShowMockSettings(v => !v)} />
+                            <CloseButton onPress={() => setShowAccessModal(true)} />
+                            <div style={{ width: 14 }} />
+                            <CupScanButton onPress={handleMockCupScan} disabled={phase !== 'scanning'} />
+                        </div>
+
+                        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 12 }}>
+                            {phase === 'scanning' && (
+                                <CircularCancelButton timeLeft={timeLeft} total={60} onCancel={handleCancelStudent} />
+                            )}
+                        </div>
+                    </div>
+
+                    {/* MODALS */}
+                    <AccessCodeModal isOpen={showAccessModal} onClose={() => { resetAll(); setShowAccessModal(false); }} />
+                    {phase === 'selectName' && (
+                        <NameSelectModal
+                            matches={matches}
+                            cardEnd={cardEnd}
+                            onSelect={handleSelectStudent}
+                            onCancel={handleTryAgain}
+                        />
+                    )}
+                    {phase === 'noAccount' && (
+                        <NoAccountModal
+                            cardEnd={cardEnd}
+                            onTryAgain={handleTryAgain}
+                            onSwitchToQR={handleSwitchToQRFromNoAccount}
+                        />
+                    )}
+                    <OutcomeModal data={phase === 'success' ? successData : null} onDone={resetAll} />
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+
+    <!-- Service Worker Registration -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js').catch(() => {});
+        }
+    </script>
+</body>
+</html>
