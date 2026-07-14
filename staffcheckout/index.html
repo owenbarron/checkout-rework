@@ -161,6 +161,40 @@
         const DEFAULT_ENABLED_MODES = { orderId: true, lastFour: false, address: false, qr: false };
         const firstEnabledMode = (enabled) => (MODE_META.find(m => enabled[m.value]) || MODE_META[0]).value;
 
+        // Share-link config: the URL can preselect a mode via hash or query, e.g.
+        //   /staffcheckout/#address              → open in Address mode (only)
+        //   /staffcheckout/?mode=order           → open in Order ID mode
+        //   /staffcheckout/?modes=order,address  → enable both, first one active
+        //   /staffcheckout/?modes=order,address#address → both enabled, Address active
+        const MODE_ALIASES = {
+            order: 'orderId', orderid: 'orderId', orderId: 'orderId',
+            last4: 'lastFour', lastfour: 'lastFour', account: 'lastFour', card: 'lastFour',
+            address: 'address', addr: 'address',
+            qr: 'qr', usefullqr: 'qr', usefull: 'qr',
+        };
+        const canonicalMode = (raw) => {
+            if (!raw) return null;
+            const k = String(raw).trim().toLowerCase();
+            return MODE_ALIASES[k] || (MODE_META.some(m => m.value === raw) ? raw : null);
+        };
+        const parseModeConfig = () => {
+            const params = new URLSearchParams(window.location.search);
+            const active = canonicalMode(params.get('mode') || (window.location.hash || '').replace(/^#/, ''));
+            const modesParam = params.get('modes');
+            const enabled = { ...DEFAULT_ENABLED_MODES };
+            let list = null;
+            if (modesParam) list = modesParam.split(',').map(canonicalMode).filter(Boolean);
+            else if (active) list = [active]; // a lone #mode means "just show this mode"
+            if (list && list.length) {
+                Object.keys(enabled).forEach(k => { enabled[k] = false; });
+                list.forEach(k => { enabled[k] = true; });
+            }
+            return {
+                enabled,
+                active: active && enabled[active] ? active : firstEnabledMode(enabled),
+            };
+        };
+
         // ============================================================
         // ICONS
         // ============================================================
@@ -1380,11 +1414,11 @@
         // MAIN APP
         // ============================================================
         const App = () => {
-            // Which lookup modes are available (configurable in settings). Default: Order ID only.
-            const [enabledModes, setEnabledModes]   = useState(DEFAULT_ENABLED_MODES);
+            // Which lookup modes are available (configurable in settings, or via URL). Default: Order ID only.
+            const [enabledModes, setEnabledModes]   = useState(() => parseModeConfig().enabled);
 
             // Flow state
-            const [mode, setMode]                   = useState(() => firstEnabledMode(DEFAULT_ENABLED_MODES)); // 'orderId' | 'lastFour' | 'address' | 'qr'
+            const [mode, setMode]                   = useState(() => parseModeConfig().active); // 'orderId' | 'lastFour' | 'address' | 'qr'
             const [phase, setPhase]                 = useState('lookup');    // 'lookup' | 'selectName' | 'noAccount' | 'noOrder' | 'selectAddress' | 'noAddress' | 'scanning' | 'success'
             const [digits, setDigits]               = useState('');
             const [matches, setMatches]             = useState([]);
@@ -1430,6 +1464,23 @@
                 mq.addEventListener('change', handler);
                 return () => mq.removeEventListener('change', handler);
             }, []);
+
+            // Live-apply URL mode config when the hash changes (handy for demos)
+            useEffect(() => {
+                const onHash = () => {
+                    const cfg = parseModeConfig();
+                    setEnabledModes(cfg.enabled);
+                    if (phase === 'lookup') {
+                        setMode(cfg.active);
+                        setDigits('');
+                        setMatches([]);
+                        setCardEnd('');
+                        setSelectedBuilding(null);
+                    }
+                };
+                window.addEventListener('hashchange', onHash);
+                return () => window.removeEventListener('hashchange', onHash);
+            }, [phase]);
 
             // Click-outside for settings panel
             useEffect(() => {

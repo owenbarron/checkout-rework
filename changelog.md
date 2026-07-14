@@ -11,6 +11,7 @@
 - Added a "Lookup modes" section to the settings panel with per-mode toggles: Order ID, Account · Last 4, Address, USEFULL QR
 - Defaults to **Order ID only**; at least one mode must stay enabled
 - The top-right mode switcher only appears when 2+ modes are enabled, and only shows the enabled ones; disabling the active mode falls back to the first enabled one
+- Added URL config for share links: `#address` (or `?mode=`) preselects a mode, `?modes=order,address` defines the enabled set; a lone `#mode` shows just that one mode. Aliases accepted (`#order`/`#orderid`, `#last4`/`#account`, `#addr`, `#qr`); hash changes live-switch the mode
 
 ### Address lookup (senior-living / The Glen)
 - Added an Address mode for facilities where staff check out by residence rather than by person
