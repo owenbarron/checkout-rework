@@ -1,5 +1,93 @@
 # Changelog
 
+## 2026-07-14 — Session 5
+
+### Staff Checkout (formerly Grubhub Lookup)
+- Renamed the `grubhub/` prototype to `staffcheckout/` (served at `/staffcheckout/`); updated page title, manifest name/short_name/description, and Apple web-app title accordingly
+- Renamed the in-app header from "Front of House" to "Staff Checkout"
+- Pinned `@babel/standalone` to `7.24.0` — unpkg had rolled to Babel 8, whose new default JSX runtime emitted `import` statements that broke the in-browser transform (blank screen)
+
+### Configurable lookup modes
+- Added a "Lookup modes" section to the settings panel with per-mode toggles: Order ID, Account · Last 4, Address, USEFULL QR
+- Defaults to **Order ID only**; at least one mode must stay enabled
+- The top-right mode switcher only appears when 2+ modes are enabled, and only shows the enabled ones; disabling the active mode falls back to the first enabled one
+
+### Address lookup (senior-living / The Glen)
+- Added an Address mode for facilities where staff check out by residence rather than by person
+- Building picker (Canyonview, Gardenview, Hillside, Garden Terrace, Villas) on the top half; "Look Up Address" heading, no subheader
+- Pick a building → 3-digit room keypad with a building chip for context (tap to change building); room number is prefixed per building (e.g. Canyonview + 150 → "Canyonview C150")
+- Embedded the real room roster from the Glen spreadsheet (369 rooms, numbers only — no PII) and validate entered rooms against it; unknown rooms show a "…not found" prompt
+- Single unambiguous match skips the confirm dialog and goes straight to container scanning (persistent building/address context already confirms the selection); a disambiguation picker only appears when one room number maps to multiple units (e.g. 137-North / 137-West)
+
+### Expected-count removal
+- Removed the "Expected: X containers" badge and all `orderExpected` plumbing — the count can't be known reliably, so the scan screen just shows the running container total
+
+### Service worker / PWA
+- Rewrote `staffcheckout/sw.js` to be **network-first**: always fetch from the network (so edits appear on a plain reload), refresh the cache on each success, fall back to cache only when offline; bumped cache to `v2`
+- Verified PWA wiring intact: manifest loads (standalone, icons, scoped start URL), SW registers and controls `/staffcheckout/`
+- Added `*.xlsx` to `.gitignore` so resident roster exports (which contain names + emails) stay out of git
+
+## 2026-04-17 — Session 4
+
+### Fullheight Checkout Prototype
+- Added mocked partial-rejection and full-rejection checkout outcomes to `fullheight/index.html`
+- Added faint settings gear next to the existing close control in both portrait and landscape layouts
+- Added mock checkout settings panel with `Already checked out: X` input to force success, partial success, or full rejection flows
+- Partial-success outcome now uses the chosen cresting exclamation warning treatment with:
+  - two-name pill rendering when 2 containers are rejected
+  - one pill plus `and X more` summary when 3+ containers are rejected
+- Full-rejection outcome now shows a gold warning card with exclamation icon and `Already Checked Out!` copy
+- Increased warning outcome auto-dismiss to 30 seconds; normal success was later adjusted to 7 seconds
+
+### Mockup Files
+- Added `fullheight/mockup-partial-checkout.html` with expanded warning-icon exploration and scenario mockups
+- Added `fullheight/mockup-already-checked-out-variants.html` with the three finalist warning states:
+  - partial success with 2 already checked out
+  - partial success with 3+ already checked out
+  - full rejection
+
+### Audio / Sounds
+- Moved prototype audio assets into `sounds/`
+- Updated scan-success sound to `sounds/successful-scan.m4a`
+- Added distinct final-success and error audio paths
+- Added selectable sound configuration in the settings panel for:
+  - Container Success
+  - Final Success
+  - Error
+- Each sound category now supports mixing and matching from the full `sounds/` folder and has its own preview/play button
+- Added and pushed final success chimes:
+  - `final-success-chime-1.mp3`
+  - `final-success-chime-2.mp3`
+  - `final-success-chime-3.mp3`
+  - `final-success-chime-4.mp3`
+- Removed legacy `checkout-complete.mp3` from the selectable sound list after it was replaced by `final-success-chime-1.mp3`
+
+### Assets / Paths
+- Moved shared visual assets into `images/`
+- Updated fullheight prototype asset paths in:
+  - `fullheight/index.html`
+  - `fullheight/manifest.json`
+  - `fullheight/sw.js`
+- Updated `help.html` header logo path to the new `images/` location
+
+### help.html
+- Added anchored QR test section at `#test-qr-codes`
+- Added direct QR modal link target at `#qr-modal`
+- Added persistent QR modal for test codes with top navigation tabs for:
+  - Container 1
+  - Container 2
+  - Container 3
+  - User
+- Added quick links in the Test QR Codes section to open the modal or link directly to the section/modal
+
+### Git / Releases
+- Committed and pushed multiple updates to `main`, including:
+  - mocked rejection flows
+  - help-page QR modal improvements
+  - selectable success chimes
+  - sound-settings cleanup
+  - final success chime audio files
+
 ## 2026-03-06 — Session 3
 
 ### Version C (fullheight) UI Polish

@@ -1,7 +1,7 @@
 {
-  "name": "USEFULL Checkout Kiosk (Grubhub Lookup)",
-  "short_name": "USEFULL GH",
-  "description": "Look up student by Grubhub receipt and check out reusable containers",
+  "name": "USEFULL Checkout Kiosk (Staff Checkout)",
+  "short_name": "USEFULL Staff",
+  "description": "Staff-run checkout: look up by order ID, account, or address and check out reusable containers",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

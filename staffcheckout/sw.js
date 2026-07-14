@@ -1,4 +1,4 @@
-const CACHE_NAME = 'usefull-kiosk-grubhub-v1';
+const CACHE_NAME = 'usefull-kiosk-staffcheckout-v2';
 const ASSETS = [
     './',
     './index.html',
@@ -28,23 +28,20 @@ self.addEventListener('activate', (event) => {
     self.clients.claim();
 });
 
+// Network-first: always try the network so edits show immediately, refresh the
+// cache with each successful response, and fall back to cache only when offline.
 self.addEventListener('fetch', (event) => {
-    const url = new URL(event.request.url);
-
-    if (url.origin !== location.origin) {
-        event.respondWith(
-            fetch(event.request)
-                .then((response) => {
-                    const clone = response.clone();
-                    caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
-                    return response;
-                })
-                .catch(() => caches.match(event.request))
-        );
-        return;
-    }
+    if (event.request.method !== 'GET') return;
 
     event.respondWith(
-        caches.match(event.request).then((cached) => cached || fetch(event.request))
+        fetch(event.request)
+            .then((response) => {
+                if (response && response.ok) {
+                    const clone = response.clone();
+                    caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+                }
+                return response;
+            })
+            .catch(() => caches.match(event.request))
     );
 });

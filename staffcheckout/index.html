@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>USEFULL Checkout Kiosk — Grubhub Lookup</title>
+    <title>USEFULL Checkout Kiosk — Staff Checkout</title>
 
     <!-- PWA -->
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#ffffff">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
-    <meta name="apple-mobile-web-app-title" content="USEFULL GH">
+    <meta name="apple-mobile-web-app-title" content="USEFULL Staff">
     <link rel="apple-touch-icon" href="../images/USEFULL-Icon-Registered_Color.svg">
     <link rel="icon" type="image/svg+xml" href="../images/USEFULL-Icon-Registered_Color.svg">
 
@@ -22,7 +22,7 @@
     <!-- React -->
     <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone@7.24.0/babel.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
 
@@ -111,6 +111,56 @@
             ],
         };
 
+        // Mock Illumia order database keyed by 4-digit order number
+        const MOCK_ORDERS = {
+            '1001': { name: 'Marcus Thompson' },
+            '2048': { name: 'Lillian Lyons'   },
+            '3310': { name: 'Aisha Patel'     },
+            '7777': { name: 'Sofia Nakamura'  },
+        };
+
+        // Senior-living buildings (Address lookup). Room number is prefixed with `prefix`.
+        // e.g. Canyonview + "150" => "Canyonview C150"
+        const BUILDINGS = [
+            { name: 'Canyonview',    prefix: 'C', key: 'Canyonview'    },
+            { name: 'Gardenview',    prefix: 'G', key: 'Gardenview'    },
+            { name: 'Hillside',      prefix: 'H', key: 'Hillside'      },
+            { name: 'Garden Terrace', prefix: '', key: 'GardenTerrace' },
+            { name: 'Villas',        prefix: 'V', key: 'Villas'        },
+        ];
+
+        // Valid room numbers per building, from the Glen resident roster.
+        // Address lookup only proceeds for a room that exists here.
+        const BUILDING_ROOMS = {
+            Canyonview: ['137','138','139','140','141','142','143','144','145','146','147','148','150','151','152','153','154','155','156','157','158','159','160','161','162','237','238','239','240','241','242','243','244','245','246','247','248','250','251','252','253','254','255','256','257','258','259','260','261','262','337','338','339','340','341','342','343','344','345','346','347','348','350','351','352','353','354','355','356','357','358','359','360','361','362'],
+            Gardenview: ['101','103','104','105','106','107','108','109','110','112','114','115','116','117','119','120','121','122','124','126','127','128','129','130','131','132','133','134','135','201','203','204','205','206','207','208','209','210','212','214','215','216','217','219','220','221','222','224','226','227','228','229','230','231','232','233','234','235','301','303','304','305','306','307','308','309','310','312','314','315','316','317','319','320','321','322','324','326','327','328','329','330','331','332','333','334','335'],
+            Hillside: ['101','103','104','105','106','107','108','109','110','111','112','114','115','116','117','118','119','120','121','122','123','125','126','128','129','130','131','132','133','134','135','137','138','139','140','201','202','203','204','205','206','207','208','209','210','211','212','214','215','216','217','218','219','220','221','222','223','225','226','228','229','230','231','232','233','234','235','237','238','239','240','301','302','303','304','305','306','307','308','309','310','311','312','314','315','316','317','318','319','320','321','322','323','325','326','328','329','330','331','332','333','334','335','337','338','339','340','411','415','416','417','418','420','421','422','423','426','428','429','430','431','432','433','434','435','437','438','439','440'],
+            GardenTerrace: ['101','102','103','104','105','106','107','108','201','202','203','204','205','206','207','208'],
+            Villas: ['101','102','103','104','105','106','107','108','109','110','111','112','113','114','115','116','117','118','119','120','121','122','123','124','125','126','127','128','129','130','131','132','133','134','135','136','137','138','139','140','141','142','143','144','145','146','147','148','149','150','151','152','153','154','155','156','157','158','159','160','161','162'],
+        };
+        // Resolve a typed room number to the matching registered address(es).
+        // Roster entries are usually plain numbers ("150"), but may carry a
+        // variant suffix ("137N", "137-West") when one number has multiple units.
+        // Typing the 3-digit number matches every unit sharing that number, so
+        // staff never type the suffix — they disambiguate in the picker instead.
+        const numericPart = (room) => String(room).match(/^\s*(\d+)/)?.[1] ?? '';
+        const resolveAddressMatches = (building, num) => {
+            const rooms = BUILDING_ROOMS[building.key] || [];
+            return rooms
+                .filter(r => numericPart(r) === num)
+                .map(r => ({ name: `${building.name} ${building.prefix}${r}`, room: r }));
+        };
+
+        // Lookup modes, in display order. Enabled/disabled via the settings panel.
+        const MODE_META = [
+            { value: 'orderId',  label: 'Order ID',   settingsLabel: 'Order ID' },
+            { value: 'lastFour', label: 'Last 4',     settingsLabel: 'Account · Last 4' },
+            { value: 'address',  label: 'Address',    settingsLabel: 'Address' },
+            { value: 'qr',       label: 'USEFULL QR', settingsLabel: 'USEFULL QR' },
+        ];
+        const DEFAULT_ENABLED_MODES = { orderId: true, lastFour: false, address: false, qr: false };
+        const firstEnabledMode = (enabled) => (MODE_META.find(m => enabled[m.value]) || MODE_META[0]).value;
+
         // ============================================================
         // ICONS
         // ============================================================
@@ -191,6 +241,30 @@
                 <path d="M10 4.5c0-.55.45-1 1-1h2c.55 0 1 .45 1 1V8h-4V4.5z"/>
             </svg>
         );
+        const IconHash = ({ style, className }) => (
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={style} className={className}>
+                <line x1="4" y1="9"  x2="20" y2="9"/>
+                <line x1="4" y1="15" x2="20" y2="15"/>
+                <line x1="10" y1="3" x2="8"  y2="21"/>
+                <line x1="16" y1="3" x2="14" y2="21"/>
+            </svg>
+        );
+        const IconBuilding = ({ style, className }) => (
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" style={style} className={className}>
+                <path d="M3 21h18"/>
+                <path d="M5 21V5a1 1 0 0 1 1-1h8a1 1 0 0 1 1 1v16"/>
+                <path d="M15 21V9h3a1 1 0 0 1 1 1v11"/>
+                <line x1="8" y1="8" x2="8" y2="8"/><line x1="11.5" y1="8" x2="11.5" y2="8"/>
+                <line x1="8" y1="12" x2="8" y2="12"/><line x1="11.5" y1="12" x2="11.5" y2="12"/>
+                <line x1="8" y1="16" x2="8" y2="16"/><line x1="11.5" y1="16" x2="11.5" y2="16"/>
+            </svg>
+        );
+        const MODE_ICONS = {
+            orderId:  IconHash,
+            lastFour: IconKeypad,
+            address:  IconBuilding,
+            qr:       IconQR,
+        };
 
         // ============================================================
         // USEFULL LOGO
@@ -339,7 +413,8 @@
         // ============================================================
         // COUNT CARD
         // ============================================================
-        const CountCard = ({ count, justScanned }) => (
+        const CountCard = ({ count, justScanned }) => {
+            return (
             <div
                 className="w-full bg-white rounded-2xl border border-gray-100 shadow-lg flex flex-col items-center justify-center"
                 style={{ animation: 'scaleUp 0.4s cubic-bezier(0.16, 1, 0.3, 1)', padding: '20px 12px', gap: 2, overflow: 'visible' }}
@@ -382,7 +457,8 @@
                     Container{count !== 1 ? 's' : ''}
                 </span>
             </div>
-        );
+            );
+        };
 
         // ============================================================
         // ERROR TOAST
@@ -404,7 +480,9 @@
         // ============================================================
         // MODE TOGGLE — LAST FOUR | USEFULL QR
         // ============================================================
-        const ModeToggle = ({ mode, onChange }) => {
+        const ModeToggle = ({ mode, onChange, enabledModes }) => {
+            const visible = MODE_META.filter(m => enabledModes[m.value]);
+            if (visible.length < 2) return null; // nothing to switch between
             const Btn = ({ value, icon, label }) => {
                 const active = mode === value;
                 return (
@@ -439,8 +517,14 @@
                     gap: 2,
                     boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
                 }}>
-                    <Btn value="lastFour" icon={<IconKeypad style={{ width: 16, height: 16 }} />} label="Last 4" />
-                    <Btn value="qr"       icon={<IconQR      style={{ width: 16, height: 16 }} />} label="USEFULL QR" />
+                    {visible.map(m => {
+                        const Icon = MODE_ICONS[m.value];
+                        return (
+                            <Btn key={m.value} value={m.value}
+                                 icon={<Icon style={{ width: 16, height: 16 }} />}
+                                 label={m.label} />
+                        );
+                    })}
                 </div>
             );
         };
@@ -448,8 +532,8 @@
         // ============================================================
         // DIGIT DISPLAY — 4 boxes
         // ============================================================
-        const DigitDisplay = ({ digits }) => {
-            const padded = digits.padEnd(4, ' ').split('');
+        const DigitDisplay = ({ digits, length = 4 }) => {
+            const padded = digits.padEnd(length, ' ').split('');
             return (
                 <div style={{ display: 'flex', gap: 14, justifyContent: 'center' }}>
                     {padded.map((d, i) => {
@@ -551,7 +635,7 @@
         // ============================================================
         // NAME SELECTION MODAL
         // ============================================================
-        const NameSelectModal = ({ matches, cardEnd, onSelect, onCancel }) => {
+        const NameSelectModal = ({ matches, cardEnd, onSelect, onCancel, contextLabel, title, hideSubtitle }) => {
             if (!matches || matches.length === 0) return null;
             const single = matches.length === 1;
 
@@ -565,12 +649,14 @@
                         <div style={{ padding: '32px 32px 16px', textAlign: 'center' }}>
                             <h2 className="font-display font-extrabold"
                                 style={{ color: '#1e293b', fontSize: '1.85rem', lineHeight: 1.2 }}>
-                                {single ? 'Confirm student' : 'Select the student'}
+                                {title || (single ? 'Confirm student' : 'Select the student')}
                             </h2>
-                            <p className="font-body" style={{ color: '#6B7280', fontSize: '1.05rem', marginTop: 6 }}>
-                                Card ending in <span className="font-bold" style={{ color: '#1e293b' }}>{cardEnd}</span>
-                                {!single && <> · {matches.length} matches</>}
-                            </p>
+                            {!hideSubtitle && (
+                                <p className="font-body" style={{ color: '#6B7280', fontSize: '1.05rem', marginTop: 6 }}>
+                                    {contextLabel || (<>Card ending in <span className="font-bold" style={{ color: '#1e293b' }}>{cardEnd}</span></>)}
+                                    {!single && <> · {matches.length} matches</>}
+                                </p>
+                            )}
                         </div>
 
                         <div style={{ padding: '12px 28px 28px', display: 'flex', flexDirection: 'column', gap: 18 }}>
@@ -680,6 +766,93 @@
                             }}
                         >
                             Try a different number
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+
+        // ============================================================
+        // ORDER NOT FOUND MODAL
+        // ============================================================
+        const OrderNotFoundModal = ({ orderNum, onTryAgain }) => (
+            <div className="absolute inset-0 z-50 flex items-center justify-center"
+                 style={{ backgroundColor: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(8px)',
+                          WebkitBackdropFilter: 'blur(8px)', animation: 'fadeIn 0.2s ease-out' }}>
+                <div className="bg-white rounded-3xl shadow-2xl mx-6 overflow-hidden"
+                     style={{ animation: 'scaleUp 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                              width: '100%', maxWidth: 520 }}>
+                    <div style={{ padding: '36px 32px 18px', textAlign: 'center' }}>
+                        <div style={{
+                            width: 72, height: 72, borderRadius: '50%',
+                            background: '#FFF7E6',
+                            margin: '0 auto 18px',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        }}>
+                            <IconExclamation style={{ width: 36, height: 36 }} color={GOLD} />
+                        </div>
+                        <h2 className="font-display font-extrabold"
+                            style={{ color: '#1e293b', fontSize: '1.65rem', lineHeight: 1.25 }}>
+                            Order #{orderNum} not found
+                        </h2>
+                        <p className="font-body" style={{ color: '#6B7280', fontSize: '1.05rem', marginTop: 12, lineHeight: 1.5 }}>
+                            Check the order number on the Grubhub receipt and try again.
+                        </p>
+                    </div>
+                    <div style={{ padding: '8px 24px 24px' }}>
+                        <button
+                            onClick={onTryAgain}
+                            className="font-display font-bold uppercase tracking-wider w-full"
+                            style={{
+                                padding: '18px', borderRadius: 14,
+                                backgroundColor: TEAL, color: '#fff',
+                                fontSize: '1rem', border: 'none', cursor: 'pointer',
+                                boxShadow: `0 6px 18px ${TEAL}40`,
+                            }}
+                        >
+                            Try a different order number
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+
+        const AddressNotFoundModal = ({ addressLabel, onTryAgain }) => (
+            <div className="absolute inset-0 z-50 flex items-center justify-center"
+                 style={{ backgroundColor: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(8px)',
+                          WebkitBackdropFilter: 'blur(8px)', animation: 'fadeIn 0.2s ease-out' }}>
+                <div className="bg-white rounded-3xl shadow-2xl mx-6 overflow-hidden"
+                     style={{ animation: 'scaleUp 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                              width: '100%', maxWidth: 520 }}>
+                    <div style={{ padding: '36px 32px 18px', textAlign: 'center' }}>
+                        <div style={{
+                            width: 72, height: 72, borderRadius: '50%',
+                            background: '#FFF7E6',
+                            margin: '0 auto 18px',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        }}>
+                            <IconExclamation style={{ width: 36, height: 36 }} color={GOLD} />
+                        </div>
+                        <h2 className="font-display font-extrabold"
+                            style={{ color: '#1e293b', fontSize: '1.65rem', lineHeight: 1.25 }}>
+                            {addressLabel} not found
+                        </h2>
+                        <p className="font-body" style={{ color: '#6B7280', fontSize: '1.05rem', marginTop: 12, lineHeight: 1.5 }}>
+                            No resident is registered at that room. Double-check the room number and try again.
+                        </p>
+                    </div>
+                    <div style={{ padding: '8px 24px 24px' }}>
+                        <button
+                            onClick={onTryAgain}
+                            className="font-display font-bold uppercase tracking-wider w-full"
+                            style={{
+                                padding: '18px', borderRadius: 14,
+                                backgroundColor: TEAL, color: '#fff',
+                                fontSize: '1rem', border: 'none', cursor: 'pointer',
+                                boxShadow: `0 6px 18px ${TEAL}40`,
+                            }}
+                        >
+                            Try a different room
                         </button>
                     </div>
                 </div>
@@ -1026,11 +1199,16 @@
             onErrorSoundChange,
             onPreviewErrorSound,
             onFillCard,
+            onFillOrder,
+            enabledModes,
+            onToggleMode,
         }) => {
             return (
                 <div style={{
                     width: 320,
                     maxWidth: 'min(320px, calc(100vw - 48px))',
+                    maxHeight: 'calc(100vh - 120px)',
+                    overflowY: 'auto',
                     backgroundColor: 'rgba(255,255,255,0.97)',
                     border: '1px solid rgba(148, 163, 184, 0.2)',
                     borderRadius: 14,
@@ -1041,6 +1219,55 @@
                 }}>
                     <div className="font-display font-bold uppercase tracking-wider"
                          style={{ color: '#94a3b8', fontSize: '0.72rem', marginBottom: 8 }}>
+                        Lookup modes
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                        {MODE_META.map(m => {
+                            const on = !!enabledModes[m.value];
+                            const Icon = MODE_ICONS[m.value];
+                            const isLast = Object.values(enabledModes).filter(Boolean).length === 1 && on;
+                            return (
+                                <button
+                                    key={m.value}
+                                    onClick={() => { if (!isLast) onToggleMode(m.value); }}
+                                    className="font-body"
+                                    title={isLast ? 'At least one mode must stay on' : ''}
+                                    style={{
+                                        display: 'flex', alignItems: 'center', gap: 10,
+                                        padding: '8px 10px',
+                                        border: `1px solid ${on ? TEAL : '#e2e8f0'}`,
+                                        borderRadius: 9,
+                                        backgroundColor: on ? TEAL_LIGHT : 'white',
+                                        cursor: isLast ? 'not-allowed' : 'pointer',
+                                        textAlign: 'left',
+                                    }}
+                                >
+                                    <Icon style={{ width: 16, height: 16, color: on ? TEAL : '#94a3b8', flexShrink: 0 }} />
+                                    <span style={{ flex: 1, fontSize: '0.9rem', color: on ? '#0f172a' : '#64748b' }}>
+                                        {m.settingsLabel}
+                                    </span>
+                                    <span style={{
+                                        width: 34, height: 20, borderRadius: 999,
+                                        backgroundColor: on ? TEAL : '#cbd5e1',
+                                        position: 'relative', flexShrink: 0,
+                                        transition: 'background-color 0.2s',
+                                        opacity: isLast ? 0.6 : 1,
+                                    }}>
+                                        <span style={{
+                                            position: 'absolute', top: 2, left: on ? 16 : 2,
+                                            width: 16, height: 16, borderRadius: '50%',
+                                            backgroundColor: 'white',
+                                            transition: 'left 0.2s',
+                                            boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
+                                        }} />
+                                    </span>
+                                </button>
+                            );
+                        })}
+                    </div>
+
+                    <div className="font-display font-bold uppercase tracking-wider"
+                         style={{ color: '#94a3b8', fontSize: '0.72rem', marginTop: 16, marginBottom: 8 }}>
                         Mock card lookups
                     </div>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
@@ -1082,6 +1309,48 @@
                     </div>
 
                     <div className="font-display font-bold uppercase tracking-wider"
+                         style={{ color: '#94a3b8', fontSize: '0.72rem', marginTop: 14, marginBottom: 8 }}>
+                        Mock order lookups
+                    </div>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                        {Object.entries(MOCK_ORDERS).map(([code, order]) => (
+                            <button
+                                key={code}
+                                onClick={() => onFillOrder(code)}
+                                className="font-body"
+                                style={{
+                                    padding: '7px 11px',
+                                    border: '1px solid #dbe3ea',
+                                    borderRadius: 8,
+                                    fontSize: '0.85rem',
+                                    backgroundColor: 'white',
+                                    cursor: 'pointer',
+                                    color: '#0f172a',
+                                }}
+                                title={order.name}
+                            >
+                                #{code}
+                            </button>
+                        ))}
+                        <button
+                            onClick={() => onFillOrder('0000')}
+                            className="font-body"
+                            style={{
+                                padding: '7px 11px',
+                                border: '1px solid #fecaca',
+                                borderRadius: 8,
+                                fontSize: '0.85rem',
+                                backgroundColor: '#FEF2F2',
+                                cursor: 'pointer',
+                                color: '#991b1b',
+                            }}
+                            title="Order not found"
+                        >
+                            #0000 (none)
+                        </button>
+                    </div>
+
+                    <div className="font-display font-bold uppercase tracking-wider"
                          style={{ color: '#94a3b8', fontSize: '0.72rem', marginTop: 16, marginBottom: 6 }}>
                         Sounds
                     </div>
@@ -1111,13 +1380,19 @@
         // MAIN APP
         // ============================================================
         const App = () => {
+            // Which lookup modes are available (configurable in settings). Default: Order ID only.
+            const [enabledModes, setEnabledModes]   = useState(DEFAULT_ENABLED_MODES);
+
             // Flow state
-            const [mode, setMode]                   = useState('lastFour'); // 'lastFour' | 'qr'
-            const [phase, setPhase]                 = useState('lookup');    // 'lookup' | 'selectName' | 'noAccount' | 'scanning' | 'success'
+            const [mode, setMode]                   = useState(() => firstEnabledMode(DEFAULT_ENABLED_MODES)); // 'orderId' | 'lastFour' | 'address' | 'qr'
+            const [phase, setPhase]                 = useState('lookup');    // 'lookup' | 'selectName' | 'noAccount' | 'noOrder' | 'selectAddress' | 'noAddress' | 'scanning' | 'success'
             const [digits, setDigits]               = useState('');
             const [matches, setMatches]             = useState([]);
             const [cardEnd, setCardEnd]             = useState('');          // last 4 used for current lookup (display)
             const [selectedUser, setSelectedUser]   = useState(null);
+            const [orderNum, setOrderNum]           = useState('');
+            const [selectedBuilding, setSelectedBuilding] = useState(null);  // { name, prefix } for Address mode
+            const [addressLabel, setAddressLabel]   = useState('');          // e.g. "Canyonview C150"
 
             // Container scan state
             const [items, setItems]                 = useState([]);
@@ -1140,6 +1415,13 @@
             const audioCtxRef     = useRef(null);
             const soundBuffersRef = useRef({});
             const mockPanelRef    = useRef(null);
+
+            // Refs mirroring state for use inside stable callbacks
+            const modeRef            = useRef(mode);            modeRef.current = mode;
+            const enabledModesRef    = useRef(enabledModes);    enabledModesRef.current = enabledModes;
+            const selectedBuildingRef = useRef(selectedBuilding); selectedBuildingRef.current = selectedBuilding;
+
+            const digitLen = mode === 'address' ? 3 : 4;
 
             // Orientation
             useEffect(() => {
@@ -1201,12 +1483,15 @@
 
             // Reset to start
             const resetAll = useCallback(() => {
-                setMode('lastFour');
+                setMode(firstEnabledMode(enabledModesRef.current));
                 setPhase('lookup');
                 setDigits('');
                 setMatches([]);
                 setCardEnd('');
                 setSelectedUser(null);
+                setOrderNum('');
+                setSelectedBuilding(null);
+                setAddressLabel('');
                 setItems([]);
                 setError(null);
                 setTimeLeft(60);
@@ -1222,6 +1507,9 @@
                 setDigits('');
                 setMatches([]);
                 setCardEnd('');
+                setOrderNum('');
+                setSelectedBuilding(null);
+                setAddressLabel('');
                 setError(null);
                 setTimeLeft(60);
                 setJustScanned(false);
@@ -1229,8 +1517,41 @@
                 scannedCodesRef.current.clear();
             }, []);
 
-            // Lookup a 4-digit card number
-            const performLookup = useCallback((code) => {
+            // Lookup a 4-digit card/order number
+            const performLookup = useCallback((code, modeHint) => {
+                const effectiveMode = modeHint ?? mode;
+                if (effectiveMode === 'address') {
+                    const b = selectedBuildingRef.current;
+                    if (!b) return;
+                    const found = resolveAddressMatches(b, code);
+                    if (found.length === 0) {
+                        playSound(errorSound);
+                        setAddressLabel(`${b.name} ${b.prefix}${code}`);
+                        setPhase('noAddress');
+                    } else if (found.length === 1) {
+                        // Unambiguous — the building + room is already confirmed in
+                        // context, so skip the modal and go straight to scanning.
+                        startAddressCheckout(found[0].name);
+                    } else {
+                        // Same room number, multiple units — disambiguate in a picker.
+                        setMatches(found);
+                        setPhase('selectAddress');
+                    }
+                    return;
+                }
+                if (effectiveMode === 'orderId') {
+                    const order = MOCK_ORDERS[code];
+                    setOrderNum(code);
+                    setCardEnd(code);
+                    if (!order) {
+                        playSound(errorSound);
+                        setPhase('noOrder');
+                    } else {
+                        setMatches([{ name: order.name, cardEnd: code }]);
+                        setPhase('selectName');
+                    }
+                    return;
+                }
                 const results = MOCK_STUDENTS[code] || [];
                 setMatches(results);
                 setCardEnd(code);
@@ -1240,14 +1561,15 @@
                 } else {
                     setPhase('selectName');
                 }
-            }, [errorSound, playSound]);
+            }, [mode, errorSound, playSound]);
 
             // Keypad handlers
             const handleDigit = useCallback((d) => {
+                const target = modeRef.current === 'address' ? 3 : 4;
                 setDigits(prev => {
-                    if (prev.length >= 4) return prev;
+                    if (prev.length >= target) return prev;
                     const next = prev + d;
-                    if (next.length === 4) {
+                    if (next.length === target) {
                         // defer lookup so user sees the digit first
                         setTimeout(() => performLookup(next), 180);
                     }
@@ -1261,8 +1583,16 @@
 
             const handleFillCard = useCallback((code) => {
                 setShowMockSettings(false);
+                setMode('lastFour');
                 setDigits(code);
-                setTimeout(() => performLookup(code), 180);
+                setTimeout(() => performLookup(code, 'lastFour'), 180);
+            }, [performLookup]);
+
+            const handleFillOrder = useCallback((code) => {
+                setShowMockSettings(false);
+                setMode('orderId');
+                setDigits(code);
+                setTimeout(() => performLookup(code, 'orderId'), 180);
             }, [performLookup]);
 
             // Confirm a student (from name select modal)
@@ -1288,6 +1618,48 @@
                 setDigits('');
                 setMatches([]);
                 setCardEnd('');
+                setOrderNum('');
+            }, []);
+
+            // Address: pick a building, then enter room number
+            const handleSelectBuilding = useCallback((b) => {
+                setSelectedBuilding(b);
+                setDigits('');
+            }, []);
+            const handleClearBuilding = useCallback(() => {
+                setSelectedBuilding(null);
+                setDigits('');
+            }, []);
+            const handleAddressTryAgain = useCallback(() => {
+                setDigits('');
+                setPhase('lookup'); // keep selectedBuilding so they can retype the room
+            }, []);
+            const startAddressCheckout = useCallback((name) => {
+                setSelectedUser({ name });
+                setItems([]);
+                setTimeLeft(60);
+                scannedCodesRef.current.clear();
+                setPhase('scanning');
+            }, []);
+            const handleSelectAddress = useCallback((item) => {
+                startAddressCheckout(item.name);
+            }, [startAddressCheckout]);
+
+            // Toggle a lookup mode on/off from the settings panel
+            const handleToggleMode = useCallback((value) => {
+                setEnabledModes(prev => {
+                    const next = { ...prev, [value]: !prev[value] };
+                    if (!Object.values(next).some(Boolean)) return prev; // keep at least one
+                    // If the active mode was just disabled, switch to the first still-enabled one
+                    setMode(cur => (next[cur] ? cur : firstEnabledMode(next)));
+                    return next;
+                });
+                // Reset any in-progress lookup state so the new mode starts clean
+                setDigits('');
+                setMatches([]);
+                setCardEnd('');
+                setOrderNum('');
+                setSelectedBuilding(null);
             }, []);
 
             // Container scan
@@ -1378,6 +1750,7 @@
                 setDigits('');
                 setMatches([]);
                 setCardEnd('');
+                setSelectedBuilding(null);
             }, [phase]);
 
             // Camera should run when in QR-lookup mode OR while scanning containers
@@ -1385,7 +1758,8 @@
 
             // Physical keyboard input — useful for demos
             useEffect(() => {
-                if (phase !== 'lookup' || mode !== 'lastFour') return;
+                const typingMode = mode === 'lastFour' || mode === 'orderId' || (mode === 'address' && selectedBuilding);
+                if (phase !== 'lookup' || !typingMode) return;
                 const onKey = (e) => {
                     if (e.metaKey || e.ctrlKey || e.altKey) return;
                     if (showAccessModal || showMockSettings) return;
@@ -1399,12 +1773,13 @@
                 };
                 window.addEventListener('keydown', onKey);
                 return () => window.removeEventListener('keydown', onKey);
-            }, [phase, mode, showAccessModal, showMockSettings, handleDigit, handleBackspace]);
+            }, [phase, mode, selectedBuilding, showAccessModal, showMockSettings, handleDigit, handleBackspace]);
 
             // ========================================================
             // RENDER
             // ========================================================
-            const showKeypad   = phase === 'lookup' && mode === 'lastFour';
+            const showAddressPicker = phase === 'lookup' && mode === 'address' && !selectedBuilding;
+            const showKeypad   = phase === 'lookup' && (mode === 'lastFour' || mode === 'orderId' || (mode === 'address' && selectedBuilding));
             const showQRLookup = phase === 'lookup' && mode === 'qr';
             const showScanning = phase === 'scanning';
 
@@ -1426,12 +1801,12 @@
                             <p className="font-display font-bold uppercase tracking-[0.2em]"
                                style={{ color: TEAL, fontSize: isPortrait ? '0.75rem' : '0.85rem',
                                         marginTop: '-0.5rem', paddingLeft: '0.78rem' }}>
-                                Front of House
+                                Staff Checkout
                             </p>
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 12 }}>
                             {phase === 'lookup' && (
-                                <ModeToggle mode={mode} onChange={handleModeChange} />
+                                <ModeToggle mode={mode} onChange={handleModeChange} enabledModes={enabledModes} />
                             )}
                             {phase === 'scanning' && selectedUser && (
                                 <StudentBanner name={selectedUser.name} />
@@ -1441,6 +1816,50 @@
 
                     {/* BODY — single persistent container; sub-views toggle visibility */}
                     <div style={{ flex: 1, minHeight: 0, position: 'relative' }}>
+
+                        {/* ADDRESS BUILDING PICKER VIEW */}
+                        <div style={{
+                            position: 'absolute', inset: 0,
+                            display: showAddressPicker ? 'flex' : 'none',
+                            flexDirection: 'column',
+                            alignItems: 'center', justifyContent: 'center',
+                            gap: isPortrait ? 22 : 28,
+                            padding: isPortrait ? '8px 0' : '4px 0',
+                        }}>
+                            <div className="text-center" style={{ padding: '0 12px' }}>
+                                <h1 className="font-display font-extrabold leading-tight"
+                                    style={{ color: TEAL, fontSize: isPortrait ? '2.2rem' : '2.6rem' }}>
+                                    Look Up Address
+                                </h1>
+                            </div>
+                            <div style={{
+                                display: 'flex', flexWrap: 'wrap', gap: 14,
+                                justifyContent: 'center', maxWidth: 760, padding: '0 12px',
+                            }}>
+                                {BUILDINGS.map(b => (
+                                    <button
+                                        key={b.name}
+                                        onClick={() => handleSelectBuilding(b)}
+                                        className="font-display font-bold name-pick"
+                                        style={{
+                                            display: 'flex', alignItems: 'center', gap: 12,
+                                            padding: '20px 28px',
+                                            borderRadius: 16,
+                                            border: '1.5px solid #e2e8f0',
+                                            backgroundColor: '#fff',
+                                            color: '#1e293b',
+                                            fontSize: '1.5rem',
+                                            cursor: 'pointer',
+                                            boxShadow: '0 2px 8px rgba(15,23,42,0.05)',
+                                            transition: 'border-color 0.15s ease, background-color 0.15s ease, transform 0.08s ease',
+                                        }}
+                                    >
+                                        <IconBuilding style={{ width: 26, height: 26, color: TEAL }} />
+                                        {b.name}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
 
                         {/* KEYPAD VIEW */}
                         <div style={{
@@ -1454,18 +1873,43 @@
                             <div className="text-center" style={{ padding: '0 12px' }}>
                                 <h1 className="font-display font-extrabold leading-tight"
                                     style={{ color: TEAL, fontSize: isPortrait ? '2.2rem' : '2.6rem' }}>
-                                    Look up student
+                                    {mode === 'orderId' ? 'Look up order'
+                                        : mode === 'address' ? 'Look Up Address'
+                                        : 'Look up student'}
                                 </h1>
-                                <p className="font-body mt-1.5"
-                                   style={{ color: '#6B7280', fontSize: isPortrait ? '1rem' : '1.15rem' }}>
-                                    Enter the last 4 digits of the campus card on the Grubhub receipt
-                                </p>
+                                {mode !== 'address' && (
+                                    <p className="font-body mt-1.5"
+                                       style={{ color: '#6B7280', fontSize: isPortrait ? '1rem' : '1.15rem' }}>
+                                        {mode === 'orderId'
+                                            ? 'Enter the 4-digit order number from the Grubhub receipt'
+                                            : 'Enter the last 4 digits of the campus card on the Grubhub receipt'}
+                                    </p>
+                                )}
                             </div>
-                            <DigitDisplay digits={digits} />
+                            {mode === 'address' && selectedBuilding && (
+                                <button
+                                    onClick={handleClearBuilding}
+                                    className="font-display font-bold name-pick"
+                                    style={{
+                                        display: 'inline-flex', alignItems: 'center', gap: 10,
+                                        padding: '10px 16px 10px 14px',
+                                        borderRadius: 999,
+                                        border: `1.5px solid ${TEAL}33`,
+                                        background: TEAL_LIGHT,
+                                        color: TEAL, fontSize: '1.15rem', cursor: 'pointer',
+                                    }}
+                                    title="Choose a different building"
+                                >
+                                    <IconBuilding style={{ width: 20, height: 20 }} />
+                                    {selectedBuilding.name}
+                                    <IconX style={{ width: 12, height: 12 }} strokeWidth="2.5" />
+                                </button>
+                            )}
+                            <DigitDisplay digits={digits} length={digitLen} />
                             <NumericKeypad
                                 onDigit={handleDigit}
                                 onBackspace={handleBackspace}
-                                disabled={digits.length >= 4}
+                                disabled={digits.length >= digitLen}
                             />
                         </div>
 
@@ -1566,6 +2010,9 @@
                                         onErrorSoundChange={(e) => setErrorSound(e.target.value)}
                                         onPreviewErrorSound={() => playSound(errorSound)}
                                         onFillCard={handleFillCard}
+                                        onFillOrder={handleFillOrder}
+                                        enabledModes={enabledModes}
+                                        onToggleMode={handleToggleMode}
                                     />
                                 </div>
                             )}
@@ -1590,6 +2037,30 @@
                             cardEnd={cardEnd}
                             onSelect={handleSelectStudent}
                             onCancel={handleTryAgain}
+                            contextLabel={mode === 'orderId'
+                                ? <span>Order <span className="font-bold" style={{ color: '#1e293b' }}>#{orderNum}</span></span>
+                                : null}
+                        />
+                    )}
+                    {phase === 'selectAddress' && (
+                        <NameSelectModal
+                            matches={matches}
+                            title="Select the unit"
+                            hideSubtitle
+                            onSelect={handleSelectAddress}
+                            onCancel={handleCancelStudent}
+                        />
+                    )}
+                    {phase === 'noAddress' && (
+                        <AddressNotFoundModal
+                            addressLabel={addressLabel}
+                            onTryAgain={handleAddressTryAgain}
+                        />
+                    )}
+                    {phase === 'noOrder' && (
+                        <OrderNotFoundModal
+                            orderNum={orderNum}
+                            onTryAgain={handleTryAgain}
                         />
                     )}
                     {phase === 'noAccount' && (

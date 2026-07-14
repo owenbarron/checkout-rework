@@ -1,2 +1,6 @@
 .DS_Store
 .claude/
+
+# Resident roster exports contain PII (names + emails) — keep out of git.
+# The address lookup only needs room numbers, which are embedded in the app.
+*.xlsx
