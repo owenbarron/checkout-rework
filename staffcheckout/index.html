@@ -119,8 +119,9 @@
             '7777': { name: 'Sofia Nakamura'  },
         };
 
-        // Senior-living buildings (Address lookup). Room number is prefixed with `prefix`.
-        // e.g. Canyonview + "150" => "Canyonview C150"
+        // Senior-living buildings (Address lookup). A unit is written the way an
+        // address reads: number first, street second — e.g. "C150 Canyonview",
+        // "101 Garden Terrace". `prefix` is the building's unit-code letter.
         const BUILDINGS = [
             { name: 'Canyonview',    prefix: 'C', key: 'Canyonview'    },
             { name: 'Gardenview',    prefix: 'G', key: 'Gardenview'    },
@@ -129,47 +130,75 @@
             { name: 'Villas',        prefix: 'V', key: 'Villas'        },
         ];
 
-        // Valid room numbers per building, from the Glen resident roster.
-        // Address lookup only proceeds for a room that exists here.
-        const BUILDING_ROOMS = {
+        // Valid unit numbers per building, from the Glen resident roster.
+        // ("Units" not "rooms" — in senior living these are often houses.)
+        const BUILDING_UNITS = {
             Canyonview: ['137','138','139','140','141','142','143','144','145','146','147','148','150','151','152','153','154','155','156','157','158','159','160','161','162','237','238','239','240','241','242','243','244','245','246','247','248','250','251','252','253','254','255','256','257','258','259','260','261','262','337','338','339','340','341','342','343','344','345','346','347','348','350','351','352','353','354','355','356','357','358','359','360','361','362'],
             Gardenview: ['101','103','104','105','106','107','108','109','110','112','114','115','116','117','119','120','121','122','124','126','127','128','129','130','131','132','133','134','135','201','203','204','205','206','207','208','209','210','212','214','215','216','217','219','220','221','222','224','226','227','228','229','230','231','232','233','234','235','301','303','304','305','306','307','308','309','310','312','314','315','316','317','319','320','321','322','324','326','327','328','329','330','331','332','333','334','335'],
             Hillside: ['101','103','104','105','106','107','108','109','110','111','112','114','115','116','117','118','119','120','121','122','123','125','126','128','129','130','131','132','133','134','135','137','138','139','140','201','202','203','204','205','206','207','208','209','210','211','212','214','215','216','217','218','219','220','221','222','223','225','226','228','229','230','231','232','233','234','235','237','238','239','240','301','302','303','304','305','306','307','308','309','310','311','312','314','315','316','317','318','319','320','321','322','323','325','326','328','329','330','331','332','333','334','335','337','338','339','340','411','415','416','417','418','420','421','422','423','426','428','429','430','431','432','433','434','435','437','438','439','440'],
             GardenTerrace: ['101','102','103','104','105','106','107','108','201','202','203','204','205','206','207','208'],
             Villas: ['101','102','103','104','105','106','107','108','109','110','111','112','113','114','115','116','117','118','119','120','121','122','123','124','125','126','127','128','129','130','131','132','133','134','135','136','137','138','139','140','141','142','143','144','145','146','147','148','149','150','151','152','153','154','155','156','157','158','159','160','161','162'],
         };
-        // Resolve a typed room number to the matching registered address(es).
-        // Roster entries are usually plain numbers ("150"), but may carry a
-        // variant suffix ("137N", "137-West") when one number has multiple units.
-        // Typing the 3-digit number matches every unit sharing that number, so
-        // staff never type the suffix — they disambiguate in the picker instead.
-        const numericPart = (room) => String(room).match(/^\s*(\d+)/)?.[1] ?? '';
+
+        // Roster entries are usually plain numbers ("150"), but may carry a variant
+        // suffix ("137N", "137-West") when one number covers multiple units. Staff
+        // type only the number; variants are disambiguated in a picker afterwards.
+        const numericPart = (unit) => String(unit).match(/^\s*(\d+)/)?.[1] ?? '';
+
+        // Address reads number-first, like any street address.
+        const formatAddress = (building, unit) => `${building.prefix}${unit} ${building.name}`;
+
+        // Every registered unit in `building` whose number matches what was typed.
         const resolveAddressMatches = (building, num) => {
-            const rooms = BUILDING_ROOMS[building.key] || [];
-            return rooms
-                .filter(r => numericPart(r) === num)
-                .map(r => ({ name: `${building.name} ${building.prefix}${r}`, room: r }));
+            const units = BUILDING_UNITS[building.key] || [];
+            return units
+                .filter(u => numericPart(u) === num)
+                .map(u => ({ name: formatAddress(building, u), unit: u }));
         };
 
-        // Lookup modes, in display order. Enabled/disabled via the settings panel.
+        // Streets that actually contain the typed unit number — powers the
+        // optional "prefilter streets" behaviour in the address lookup.
+        const buildingsWithUnit = (num) =>
+            BUILDINGS.filter(b => (BUILDING_UNITS[b.key] || []).some(u => numericPart(u) === num));
+
+        // Lookup modes, in display order.
         const MODE_META = [
             { value: 'orderId',  label: 'Order ID',   settingsLabel: 'Order ID' },
             { value: 'lastFour', label: 'Last 4',     settingsLabel: 'Account · Last 4' },
             { value: 'address',  label: 'Address',    settingsLabel: 'Address' },
             { value: 'qr',       label: 'USEFULL QR', settingsLabel: 'USEFULL QR' },
         ];
+
+        // The three primary lookup modes are mutually exclusive — a venue runs one
+        // of them. USEFULL QR is an add-on available alongside any of the three.
+        const PRIMARY_MODES = [
+            { value: 'orderId',  venue: 'Illumia',       sub: 'Order ID' },
+            { value: 'lastFour', venue: 'Grubhub',       sub: 'Account · Last 4' },
+            { value: 'address',  venue: 'Senior Living', sub: 'Address' },
+        ];
+        const isPrimaryMode = (v) => PRIMARY_MODES.some(m => m.value === v);
+
+        // Demo test entries, shown contextually for whichever mode is selected.
+        const MOCK_ADDRESSES = [
+            { unit: '150', key: 'Canyonview'    },
+            { unit: '101', key: 'GardenTerrace' },
+            { unit: '137', key: 'Hillside'      },
+            { unit: '162', key: 'Villas'        },
+        ];
+        const MOCK_ADDRESS_MISS = { unit: '999', key: 'Canyonview' };
+
         const DEFAULT_ENABLED_MODES = { orderId: true, lastFour: false, address: false, qr: false };
         const firstEnabledMode = (enabled) => (MODE_META.find(m => enabled[m.value]) || MODE_META[0]).value;
+        const primaryOf = (enabled) => (PRIMARY_MODES.find(m => enabled[m.value]) || PRIMARY_MODES[0]).value;
 
         // Share-link config: the URL can preselect a mode via hash or query, e.g.
         //   /staffcheckout/#address              → open in Address mode (only)
         //   /staffcheckout/?mode=order           → open in Order ID mode
-        //   /staffcheckout/?modes=order,address  → enable both, first one active
-        //   /staffcheckout/?modes=order,address#address → both enabled, Address active
+        //   /staffcheckout/?modes=order,qr       → Order ID with USEFULL QR enabled
         const MODE_ALIASES = {
-            order: 'orderId', orderid: 'orderId', orderId: 'orderId',
-            last4: 'lastFour', lastfour: 'lastFour', account: 'lastFour', card: 'lastFour',
-            address: 'address', addr: 'address',
+            order: 'orderId', orderid: 'orderId', orderId: 'orderId', illumia: 'orderId',
+            last4: 'lastFour', lastfour: 'lastFour', account: 'lastFour', card: 'lastFour', grubhub: 'lastFour',
+            address: 'address', addr: 'address', senior: 'address', seniorliving: 'address',
             qr: 'qr', usefullqr: 'qr', usefull: 'qr',
         };
         const canonicalMode = (raw) => {
@@ -187,7 +216,10 @@
             else if (active) list = [active]; // a lone #mode means "just show this mode"
             if (list && list.length) {
                 Object.keys(enabled).forEach(k => { enabled[k] = false; });
-                list.forEach(k => { enabled[k] = true; });
+                // Only one primary can be on; extras in the URL are ignored.
+                const primary = list.find(isPrimaryMode);
+                enabled[primary || primaryOf(DEFAULT_ENABLED_MODES)] = true;
+                if (list.includes('qr')) enabled.qr = true;
             }
             return {
                 enabled,
@@ -612,9 +644,41 @@
         };
 
         // ============================================================
+        // FREEFORM NUMBER DISPLAY — variable-length entry (unit numbers)
+        // ============================================================
+        // Unit numbers aren't a fixed width (101, 1502, 12), so address entry
+        // uses one growing field instead of a fixed row of digit boxes.
+        const FreeformDisplay = ({ digits, placeholder = 'Unit number' }) => {
+            const empty = digits.length === 0;
+            return (
+                <div style={{
+                    minWidth: 260,
+                    padding: '18px 30px',
+                    borderRadius: 16,
+                    background: '#fff',
+                    border: `2px solid ${empty ? '#e5e7eb' : TEAL}`,
+                    boxShadow: empty ? '0 2px 6px rgba(0,0,0,0.04)' : `0 6px 18px ${TEAL}30`,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    transition: 'border-color 0.18s ease, box-shadow 0.18s ease',
+                }}>
+                    {empty ? (
+                        <span className="font-body" style={{ color: '#cbd5e1', fontSize: '2.2rem', lineHeight: 1 }}>
+                            {placeholder}
+                        </span>
+                    ) : (
+                        <span className="font-display font-black"
+                              style={{ color: '#1e293b', fontSize: '3rem', lineHeight: 1, letterSpacing: '0.08em' }}>
+                            {digits}
+                        </span>
+                    )}
+                </div>
+            );
+        };
+
+        // ============================================================
         // NUMERIC KEYPAD
         // ============================================================
-        const NumericKeypad = ({ onDigit, onBackspace, disabled }) => {
+        const NumericKeypad = ({ onDigit, onBackspace, disabled, onSubmit, submitLabel, submitDisabled }) => {
             const keyStyle = {
                 width: '100%',
                 aspectRatio: '1.6 / 1',
@@ -643,12 +707,12 @@
             );
 
             return (
+                <div style={{ width: '100%', maxWidth: 380, display: 'flex', flexDirection: 'column', gap: 12 }}>
                 <div style={{
                     display: 'grid',
                     gridTemplateColumns: 'repeat(3, 1fr)',
                     gap: 12,
                     width: '100%',
-                    maxWidth: 380,
                 }}>
                     {[1,2,3,4,5,6,7,8,9].map(n => (
                         <Key key={n} ariaLabel={`Digit ${n}`} onClick={() => onDigit(String(n))}>
@@ -662,6 +726,28 @@
                     <Key ariaLabel="Backspace" onClick={onBackspace}>
                         <IconBackspace style={{ width: 32, height: 32, color: '#6B7280' }} />
                     </Key>
+                </div>
+                {onSubmit && (
+                    <button
+                        type="button"
+                        onClick={() => { if (!submitDisabled) onSubmit(); }}
+                        className="font-display font-extrabold uppercase tracking-wider"
+                        style={{
+                            width: '100%',
+                            padding: '18px',
+                            borderRadius: 16,
+                            border: 'none',
+                            backgroundColor: submitDisabled ? '#cbd5e1' : TEAL,
+                            color: '#fff',
+                            fontSize: '1.1rem',
+                            cursor: submitDisabled ? 'default' : 'pointer',
+                            boxShadow: submitDisabled ? 'none' : `0 8px 22px ${TEAL}55`,
+                            transition: 'background-color 0.18s ease, box-shadow 0.18s ease',
+                        }}
+                    >
+                        {submitLabel || 'Continue'}
+                    </button>
+                )}
                 </div>
             );
         };
@@ -830,7 +916,7 @@
                             Order #{orderNum} not found
                         </h2>
                         <p className="font-body" style={{ color: '#6B7280', fontSize: '1.05rem', marginTop: 12, lineHeight: 1.5 }}>
-                            Check the order number on the Grubhub receipt and try again.
+                            Check the order number on the receipt and try again.
                         </p>
                     </div>
                     <div style={{ padding: '8px 24px 24px' }}>
@@ -872,7 +958,7 @@
                             {addressLabel} not found
                         </h2>
                         <p className="font-body" style={{ color: '#6B7280', fontSize: '1.05rem', marginTop: 12, lineHeight: 1.5 }}>
-                            No resident is registered at that room. Double-check the room number and try again.
+                            No resident is registered at that unit. Double-check the unit number and try again.
                         </p>
                     </div>
                     <div style={{ padding: '8px 24px 24px' }}>
@@ -886,7 +972,7 @@
                                 boxShadow: `0 6px 18px ${TEAL}40`,
                             }}
                         >
-                            Try a different room
+                            Try a different unit
                         </button>
                     </div>
                 </div>
@@ -950,39 +1036,7 @@
             </button>
         );
 
-        const SettingsButton = ({ onPress }) => (
-            <button
-                onClick={onPress}
-                style={{
-                    width: 30, height: 30, borderRadius: '50%', flexShrink: 0,
-                    backgroundColor: '#EEF2F3',
-                    border: '1px solid rgba(0,0,0,0.18)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    cursor: 'pointer',
-                }}
-            >
-                <IconSettings style={{ width: 14, height: 14, color: '#c8d0d8' }} />
-            </button>
-        );
 
-        const CupScanButton = ({ onPress, disabled }) => (
-            <button
-                onClick={onPress}
-                disabled={disabled}
-                title="Simulate container scan"
-                style={{
-                    width: 30, height: 30, borderRadius: '50%', flexShrink: 0,
-                    backgroundColor: '#EEF2F3',
-                    border: '1px solid rgba(0,0,0,0.18)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    cursor: disabled ? 'default' : 'pointer',
-                    opacity: disabled ? 0.4 : 1,
-                    transition: 'opacity 0.15s ease, transform 0.08s ease',
-                }}
-            >
-                <IconCup style={{ width: 14, height: 14, color: '#c8d0d8' }} />
-            </button>
-        );
 
         const CircularCancelButton = ({ timeLeft, total = 60, onCancel }) => {
             const radius = 13;
@@ -1179,233 +1233,195 @@
         };
 
         // ============================================================
-        // SETTINGS PANEL (sounds + mock card buttons)
+        // DEMO CONTROLLER BAR
         // ============================================================
-        const SoundSelectRow = ({ label, value, onChange, onPreview }) => (
-            <>
-                <label className="font-body font-medium"
-                       style={{ display: 'block', color: '#475569', fontSize: '0.95rem', marginTop: 14, marginBottom: 8 }}>
-                    {label}
-                </label>
-                <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 42px', alignItems: 'center', gap: 8 }}>
-                    <select
-                        value={value}
-                        onChange={onChange}
+        // Deliberately styled as an out-of-product strip that sits ABOVE the
+        // kiosk frame. Stakeholders kept missing config hidden behind the
+        // settings gear (and mistook one venue's copy for another), so the
+        // venue switch, the QR add-on and the test entries all live out here
+        // where they read as scaffolding rather than part of the screen.
+        const DemoBar = ({
+            enabledModes, onSetPrimary, onToggleQr,
+            prefilterStreets, onTogglePrefilter,
+            onFillCard, onFillOrder, onFillAddress,
+            onSimulateScan, scanEnabled,
+        }) => {
+            const primary = primaryOf(enabledModes);
+
+            const Chip = ({ onClick, children, tone = 'default', title }) => {
+                const tones = {
+                    default: { border: '#3f4b5b', bg: '#2b3543', color: '#e2e8f0' },
+                    miss:    { border: '#7f3b3b', bg: '#3a2626', color: '#fca5a5' },
+                };
+                const t = tones[tone];
+                return (
+                    <button
+                        type="button" onClick={onClick} title={title}
                         className="font-body"
                         style={{
-                            width: '100%', minWidth: 0, padding: '10px 12px',
-                            border: '1px solid #dbe3ea', borderRadius: 10,
-                            fontSize: '0.96rem', outline: 'none',
-                            color: '#0f172a', backgroundColor: 'white',
+                            padding: '6px 11px', borderRadius: 7, fontSize: '0.82rem',
+                            border: `1px solid ${t.border}`, backgroundColor: t.bg,
+                            color: t.color, cursor: 'pointer', whiteSpace: 'nowrap',
                         }}
                     >
-                        {SOUND_OPTIONS.map(option => (
-                            <option key={option.value} value={option.value}>{option.label}</option>
-                        ))}
-                    </select>
-                    <button
-                        onClick={onPreview}
-                        title={`Play ${label}`}
-                        style={{
-                            width: 42, height: 42, borderRadius: 10,
-                            border: '1px solid #dbe3ea', backgroundColor: 'white',
-                            color: TEAL, display: 'flex',
-                            alignItems: 'center', justifyContent: 'center',
-                            cursor: 'pointer', flexShrink: 0,
-                        }}
-                    >
-                        <svg viewBox="0 0 24 24" fill="currentColor" style={{ width: 16, height: 16, marginLeft: 2 }}>
-                            <path d="M8 5.14v13.72a1 1 0 0 0 1.52.85l10.86-6.86a1 1 0 0 0 0-1.7L9.52 4.29A1 1 0 0 0 8 5.14z"/>
-                        </svg>
+                        {children}
                     </button>
-                </div>
-            </>
-        );
+                );
+            };
 
-        const MockSettingsPanel = ({
-            containerSuccessSound,
-            onContainerSuccessSoundChange,
-            onPreviewContainerSuccessSound,
-            finalSuccessSound,
-            onFinalSuccessSoundChange,
-            onPreviewFinalSuccessSound,
-            errorSound,
-            onErrorSoundChange,
-            onPreviewErrorSound,
-            onFillCard,
-            onFillOrder,
-            enabledModes,
-            onToggleMode,
-        }) => {
+            const Switch = ({ on }) => (
+                <span style={{
+                    width: 32, height: 18, borderRadius: 999, flexShrink: 0,
+                    backgroundColor: on ? TEAL : '#4b5563',
+                    position: 'relative', transition: 'background-color 0.2s',
+                }}>
+                    <span style={{
+                        position: 'absolute', top: 2, left: on ? 16 : 2,
+                        width: 14, height: 14, borderRadius: '50%', backgroundColor: '#fff',
+                        transition: 'left 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.35)',
+                    }} />
+                </span>
+            );
+
+            const Label = ({ children }) => (
+                <span className="font-display font-bold uppercase"
+                      style={{ color: '#64748b', fontSize: '0.62rem', letterSpacing: '0.12em' }}>
+                    {children}
+                </span>
+            );
+
             return (
                 <div style={{
-                    width: 320,
-                    maxWidth: 'min(320px, calc(100vw - 48px))',
-                    maxHeight: 'calc(100vh - 120px)',
-                    overflowY: 'auto',
-                    backgroundColor: 'rgba(255,255,255,0.97)',
-                    border: '1px solid rgba(148, 163, 184, 0.2)',
-                    borderRadius: 14,
-                    boxShadow: '0 18px 40px rgba(15, 23, 42, 0.14)',
-                    padding: '14px 14px 12px',
-                    backdropFilter: 'blur(10px)',
-                    WebkitBackdropFilter: 'blur(10px)',
+                    backgroundColor: '#1b2330',
+                    borderBottom: '2px solid #0f1620',
+                    padding: '8px 14px',
+                    display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 14,
+                    fontFamily: "'DM Sans', sans-serif",
                 }}>
-                    <div className="font-display font-bold uppercase tracking-wider"
-                         style={{ color: '#94a3b8', fontSize: '0.72rem', marginBottom: 8 }}>
-                        Lookup modes
-                    </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                        {MODE_META.map(m => {
-                            const on = !!enabledModes[m.value];
-                            const Icon = MODE_ICONS[m.value];
-                            const isLast = Object.values(enabledModes).filter(Boolean).length === 1 && on;
-                            return (
-                                <button
-                                    key={m.value}
-                                    onClick={() => { if (!isLast) onToggleMode(m.value); }}
-                                    className="font-body"
-                                    title={isLast ? 'At least one mode must stay on' : ''}
-                                    style={{
-                                        display: 'flex', alignItems: 'center', gap: 10,
-                                        padding: '8px 10px',
-                                        border: `1px solid ${on ? TEAL : '#e2e8f0'}`,
-                                        borderRadius: 9,
-                                        backgroundColor: on ? TEAL_LIGHT : 'white',
-                                        cursor: isLast ? 'not-allowed' : 'pointer',
-                                        textAlign: 'left',
-                                    }}
-                                >
-                                    <Icon style={{ width: 16, height: 16, color: on ? TEAL : '#94a3b8', flexShrink: 0 }} />
-                                    <span style={{ flex: 1, fontSize: '0.9rem', color: on ? '#0f172a' : '#64748b' }}>
-                                        {m.settingsLabel}
-                                    </span>
-                                    <span style={{
-                                        width: 34, height: 20, borderRadius: 999,
-                                        backgroundColor: on ? TEAL : '#cbd5e1',
-                                        position: 'relative', flexShrink: 0,
-                                        transition: 'background-color 0.2s',
-                                        opacity: isLast ? 0.6 : 1,
-                                    }}>
-                                        <span style={{
-                                            position: 'absolute', top: 2, left: on ? 16 : 2,
-                                            width: 16, height: 16, borderRadius: '50%',
-                                            backgroundColor: 'white',
-                                            transition: 'left 0.2s',
-                                            boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
-                                        }} />
-                                    </span>
-                                </button>
-                            );
-                        })}
+                    <span className="font-display font-bold uppercase"
+                          style={{ color: '#f59e0b', fontSize: '0.62rem', letterSpacing: '0.16em' }}>
+                        ● Demo controls
+                    </span>
+
+                    {/* Venue / primary mode — mutually exclusive */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <Label>Venue</Label>
+                        <div style={{
+                            display: 'inline-flex', backgroundColor: '#111823',
+                            border: '1px solid #3f4b5b', borderRadius: 8, padding: 3, gap: 2,
+                        }}>
+                            {PRIMARY_MODES.map(m => {
+                                const active = primary === m.value;
+                                return (
+                                    <button
+                                        key={m.value} type="button"
+                                        onClick={() => onSetPrimary(m.value)}
+                                        className="font-display font-bold"
+                                        style={{
+                                            display: 'flex', flexDirection: 'column', alignItems: 'flex-start',
+                                            padding: '5px 11px', borderRadius: 6, border: 'none',
+                                            backgroundColor: active ? TEAL : 'transparent',
+                                            color: active ? '#fff' : '#94a3b8',
+                                            cursor: 'pointer', lineHeight: 1.15, textAlign: 'left',
+                                        }}
+                                    >
+                                        <span style={{ fontSize: '0.82rem' }}>{m.venue}</span>
+                                        <span className="font-body"
+                                              style={{ fontSize: '0.66rem', opacity: 0.75 }}>{m.sub}</span>
+                                    </button>
+                                );
+                            })}
+                        </div>
                     </div>
 
-                    <div className="font-display font-bold uppercase tracking-wider"
-                         style={{ color: '#94a3b8', fontSize: '0.72rem', marginTop: 16, marginBottom: 8 }}>
-                        Mock card lookups
-                    </div>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                        {Object.entries(MOCK_STUDENTS).map(([code, list]) => (
-                            <button
-                                key={code}
-                                onClick={() => onFillCard(code)}
-                                className="font-body"
-                                style={{
-                                    padding: '7px 11px',
-                                    border: '1px solid #dbe3ea',
-                                    borderRadius: 8,
-                                    fontSize: '0.85rem',
-                                    backgroundColor: 'white',
-                                    cursor: 'pointer',
-                                    color: '#0f172a',
-                                }}
-                                title={list.map(s => s.name).join(', ')}
-                            >
-                                {code} ({list.length})
-                            </button>
-                        ))}
-                        <button
-                            onClick={() => onFillCard('9999')}
+                    {/* USEFULL QR — add-on, valid alongside any venue */}
+                    <button type="button" onClick={onToggleQr}
                             className="font-body"
+                            title="Offer USEFULL QR alongside the venue's lookup"
                             style={{
-                                padding: '7px 11px',
-                                border: '1px solid #fecaca',
-                                borderRadius: 8,
-                                fontSize: '0.85rem',
-                                backgroundColor: '#FEF2F2',
-                                cursor: 'pointer',
-                                color: '#991b1b',
-                            }}
-                            title="No matching account"
-                        >
-                            9999 (none)
-                        </button>
-                    </div>
+                                display: 'flex', alignItems: 'center', gap: 8,
+                                padding: '6px 10px', borderRadius: 8,
+                                border: `1px solid ${enabledModes.qr ? TEAL : '#3f4b5b'}`,
+                                backgroundColor: enabledModes.qr ? 'rgba(0,140,149,0.18)' : '#2b3543',
+                                color: enabledModes.qr ? '#e2e8f0' : '#94a3b8',
+                                cursor: 'pointer', fontSize: '0.82rem',
+                            }}>
+                        <IconQR style={{ width: 14, height: 14 }} />
+                        USEFULL QR
+                        <Switch on={enabledModes.qr} />
+                    </button>
 
-                    <div className="font-display font-bold uppercase tracking-wider"
-                         style={{ color: '#94a3b8', fontSize: '0.72rem', marginTop: 14, marginBottom: 8 }}>
-                        Mock order lookups
-                    </div>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                        {Object.entries(MOCK_ORDERS).map(([code, order]) => (
-                            <button
-                                key={code}
-                                onClick={() => onFillOrder(code)}
+                    {/* Address-only behaviour flag */}
+                    {primary === 'address' && (
+                        <button type="button" onClick={onTogglePrefilter}
                                 className="font-body"
+                                title="Only offer streets that actually contain the unit number entered"
                                 style={{
-                                    padding: '7px 11px',
-                                    border: '1px solid #dbe3ea',
-                                    borderRadius: 8,
-                                    fontSize: '0.85rem',
-                                    backgroundColor: 'white',
-                                    cursor: 'pointer',
-                                    color: '#0f172a',
-                                }}
-                                title={order.name}
-                            >
-                                #{code}
-                            </button>
-                        ))}
-                        <button
-                            onClick={() => onFillOrder('0000')}
-                            className="font-body"
-                            style={{
-                                padding: '7px 11px',
-                                border: '1px solid #fecaca',
-                                borderRadius: 8,
-                                fontSize: '0.85rem',
-                                backgroundColor: '#FEF2F2',
-                                cursor: 'pointer',
-                                color: '#991b1b',
-                            }}
-                            title="Order not found"
-                        >
-                            #0000 (none)
+                                    display: 'flex', alignItems: 'center', gap: 8,
+                                    padding: '6px 10px', borderRadius: 8,
+                                    border: `1px solid ${prefilterStreets ? TEAL : '#3f4b5b'}`,
+                                    backgroundColor: prefilterStreets ? 'rgba(0,140,149,0.18)' : '#2b3543',
+                                    color: prefilterStreets ? '#e2e8f0' : '#94a3b8',
+                                    cursor: 'pointer', fontSize: '0.82rem',
+                                }}>
+                            Prefilter streets
+                            <Switch on={prefilterStreets} />
                         </button>
+                    )}
+
+                    {/* Test entries — contextual to the selected venue */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                        <Label>Try</Label>
+                        {primary === 'orderId' && (<>
+                            {Object.entries(MOCK_ORDERS).map(([code, order]) => (
+                                <Chip key={code} onClick={() => onFillOrder(code)} title={order.name}>#{code}</Chip>
+                            ))}
+                            <Chip tone="miss" onClick={() => onFillOrder('0000')} title="Order not found">#0000 · none</Chip>
+                        </>)}
+                        {primary === 'lastFour' && (<>
+                            {Object.entries(MOCK_STUDENTS).map(([code, list]) => (
+                                <Chip key={code} onClick={() => onFillCard(code)}
+                                      title={list.map(s => s.name).join(', ')}>
+                                    {code}{list.length > 1 ? ` · ${list.length}` : ''}
+                                </Chip>
+                            ))}
+                            <Chip tone="miss" onClick={() => onFillCard('9999')} title="No matching account">9999 · none</Chip>
+                        </>)}
+                        {primary === 'address' && (<>
+                            {MOCK_ADDRESSES.map(a => {
+                                const b = BUILDINGS.find(x => x.key === a.key);
+                                return (
+                                    <Chip key={`${a.key}-${a.unit}`}
+                                          onClick={() => onFillAddress(a.unit, a.key)}
+                                          title={`Valid address — ${formatAddress(b, a.unit)}`}>
+                                        {formatAddress(b, a.unit)}
+                                    </Chip>
+                                );
+                            })}
+                            <Chip tone="miss"
+                                  onClick={() => onFillAddress(MOCK_ADDRESS_MISS.unit, MOCK_ADDRESS_MISS.key)}
+                                  title="No resident registered at this unit">
+                                {MOCK_ADDRESS_MISS.unit} · none
+                            </Chip>
+                        </>)}
                     </div>
 
-                    <div className="font-display font-bold uppercase tracking-wider"
-                         style={{ color: '#94a3b8', fontSize: '0.72rem', marginTop: 16, marginBottom: 6 }}>
-                        Sounds
-                    </div>
-                    <SoundSelectRow
-                        label="Container Success"
-                        value={containerSuccessSound}
-                        onChange={onContainerSuccessSoundChange}
-                        onPreview={onPreviewContainerSuccessSound}
-                    />
-                    <SoundSelectRow
-                        label="Final Success"
-                        value={finalSuccessSound}
-                        onChange={onFinalSuccessSoundChange}
-                        onPreview={onPreviewFinalSuccessSound}
-                    />
-                    <SoundSelectRow
-                        label="Error"
-                        value={errorSound}
-                        onChange={onErrorSoundChange}
-                        onPreview={onPreviewErrorSound}
-                    />
+                    {/* Simulate a container scan (no camera in a demo browser) */}
+                    <button type="button" onClick={onSimulateScan} disabled={!scanEnabled}
+                            className="font-body"
+                            title={scanEnabled ? 'Simulate scanning a container' : 'Available once a checkout is in progress'}
+                            style={{
+                                marginLeft: 'auto',
+                                display: 'flex', alignItems: 'center', gap: 8,
+                                padding: '6px 12px', borderRadius: 8,
+                                border: '1px solid #3f4b5b', backgroundColor: '#2b3543',
+                                color: scanEnabled ? '#e2e8f0' : '#64748b',
+                                cursor: scanEnabled ? 'pointer' : 'not-allowed',
+                                opacity: scanEnabled ? 1 : 0.55, fontSize: '0.82rem',
+                            }}>
+                        <IconCup style={{ width: 14, height: 14 }} />
+                        Scan container
+                    </button>
                 </div>
             );
         };
@@ -1438,7 +1454,12 @@
             // Misc UI state
             const [showAccessModal, setShowAccessModal]     = useState(false);
             const [isPortrait, setIsPortrait]               = useState(() => window.innerHeight > window.innerWidth);
-            const [showMockSettings, setShowMockSettings]   = useState(false);
+
+            // Address lookup reads like a written address: unit number, then street.
+            const [addressStep, setAddressStep]             = useState('unit'); // 'unit' | 'street'
+            // When on, the street list is narrowed to streets that actually have
+            // that unit number. Off by default — staff usually know the street.
+            const [prefilterStreets, setPrefilterStreets]   = useState(false);
 
             // Sound prefs
             const [containerSuccessSound, setContainerSuccessSound] = useState('successful-scan');
@@ -1448,14 +1469,17 @@
             const scannedCodesRef = useRef(new Set());
             const audioCtxRef     = useRef(null);
             const soundBuffersRef = useRef({});
-            const mockPanelRef    = useRef(null);
 
             // Refs mirroring state for use inside stable callbacks
             const modeRef            = useRef(mode);            modeRef.current = mode;
             const enabledModesRef    = useRef(enabledModes);    enabledModesRef.current = enabledModes;
             const selectedBuildingRef = useRef(selectedBuilding); selectedBuildingRef.current = selectedBuilding;
+            const digitsRef           = useRef(digits);          digitsRef.current = digits;
 
-            const digitLen = mode === 'address' ? 3 : 4;
+            // Order ID / Last 4 are fixed-width; unit numbers are freeform.
+            const FIXED_LEN = 4;
+            const MAX_UNIT_LEN = 6;
+            const isAddress = mode === 'address';
 
             // Orientation
             useEffect(() => {
@@ -1476,27 +1500,12 @@
                         setMatches([]);
                         setCardEnd('');
                         setSelectedBuilding(null);
+                        setAddressStep('unit');
                     }
                 };
                 window.addEventListener('hashchange', onHash);
                 return () => window.removeEventListener('hashchange', onHash);
             }, [phase]);
-
-            // Click-outside for settings panel
-            useEffect(() => {
-                if (!showMockSettings) return;
-                const handlePointerDown = (event) => {
-                    if (!mockPanelRef.current?.contains(event.target)) {
-                        setShowMockSettings(false);
-                    }
-                };
-                document.addEventListener('mousedown', handlePointerDown);
-                document.addEventListener('touchstart', handlePointerDown);
-                return () => {
-                    document.removeEventListener('mousedown', handlePointerDown);
-                    document.removeEventListener('touchstart', handlePointerDown);
-                };
-            }, [showMockSettings]);
 
             // Audio unlock
             useEffect(() => {
@@ -1542,6 +1551,7 @@
                 setSelectedUser(null);
                 setOrderNum('');
                 setSelectedBuilding(null);
+                setAddressStep('unit');
                 setAddressLabel('');
                 setItems([]);
                 setError(null);
@@ -1560,6 +1570,7 @@
                 setCardEnd('');
                 setOrderNum('');
                 setSelectedBuilding(null);
+                setAddressStep('unit');
                 setAddressLabel('');
                 setError(null);
                 setTimeLeft(60);
@@ -1568,28 +1579,12 @@
                 scannedCodesRef.current.clear();
             }, []);
 
-            // Lookup a 4-digit card/order number
+            // Lookup a 4-digit card/order number.
+            // Address mode does NOT come through here — it resolves on street
+            // selection (see resolveAddress), because the unit number is entered
+            // first and is freeform, so there is no digit count to trigger on.
             const performLookup = useCallback((code, modeHint) => {
                 const effectiveMode = modeHint ?? mode;
-                if (effectiveMode === 'address') {
-                    const b = selectedBuildingRef.current;
-                    if (!b) return;
-                    const found = resolveAddressMatches(b, code);
-                    if (found.length === 0) {
-                        playSound(errorSound);
-                        setAddressLabel(`${b.name} ${b.prefix}${code}`);
-                        setPhase('noAddress');
-                    } else if (found.length === 1) {
-                        // Unambiguous — the building + room is already confirmed in
-                        // context, so skip the modal and go straight to scanning.
-                        startAddressCheckout(found[0].name);
-                    } else {
-                        // Same room number, multiple units — disambiguate in a picker.
-                        setMatches(found);
-                        setPhase('selectAddress');
-                    }
-                    return;
-                }
                 if (effectiveMode === 'orderId') {
                     const order = MOCK_ORDERS[code];
                     setOrderNum(code);
@@ -1616,12 +1611,15 @@
 
             // Keypad handlers
             const handleDigit = useCallback((d) => {
-                const target = modeRef.current === 'address' ? 3 : 4;
+                const address = modeRef.current === 'address';
                 setDigits(prev => {
-                    if (prev.length >= target) return prev;
+                    // Unit numbers vary in length, so address entry never
+                    // auto-submits — staff confirm with Continue.
+                    if (address) return prev.length >= MAX_UNIT_LEN ? prev : prev + d;
+                    if (prev.length >= FIXED_LEN) return prev;
                     const next = prev + d;
-                    if (next.length === target) {
-                        // defer lookup so user sees the digit first
+                    if (next.length === FIXED_LEN) {
+                        // defer lookup so the last digit is visible first
                         setTimeout(() => performLookup(next), 180);
                     }
                     return next;
@@ -1633,14 +1631,12 @@
             }, []);
 
             const handleFillCard = useCallback((code) => {
-                setShowMockSettings(false);
                 setMode('lastFour');
                 setDigits(code);
                 setTimeout(() => performLookup(code, 'lastFour'), 180);
             }, [performLookup]);
 
             const handleFillOrder = useCallback((code) => {
-                setShowMockSettings(false);
                 setMode('orderId');
                 setDigits(code);
                 setTimeout(() => performLookup(code, 'orderId'), 180);
@@ -1672,19 +1668,7 @@
                 setOrderNum('');
             }, []);
 
-            // Address: pick a building, then enter room number
-            const handleSelectBuilding = useCallback((b) => {
-                setSelectedBuilding(b);
-                setDigits('');
-            }, []);
-            const handleClearBuilding = useCallback(() => {
-                setSelectedBuilding(null);
-                setDigits('');
-            }, []);
-            const handleAddressTryAgain = useCallback(() => {
-                setDigits('');
-                setPhase('lookup'); // keep selectedBuilding so they can retype the room
-            }, []);
+            // ── Address: unit number first, then street (reads like an address) ──
             const startAddressCheckout = useCallback((name) => {
                 setSelectedUser({ name });
                 setItems([]);
@@ -1692,25 +1676,115 @@
                 scannedCodesRef.current.clear();
                 setPhase('scanning');
             }, []);
+
+            // Resolve once both halves are known. Unlike the fixed-width lookups
+            // this fires on street selection, not on a digit count.
+            const resolveAddress = useCallback((building, unit) => {
+                const found = resolveAddressMatches(building, unit);
+                if (found.length === 0) {
+                    playSound(errorSound);
+                    setAddressLabel(formatAddress(building, unit));
+                    setPhase('noAddress');
+                } else if (found.length === 1) {
+                    // Unambiguous — unit and street are both already on screen,
+                    // so skip the confirm modal and go straight to scanning.
+                    startAddressCheckout(found[0].name);
+                } else {
+                    // One number covering several units — disambiguate.
+                    setMatches(found);
+                    setPhase('selectAddress');
+                }
+            }, [errorSound, playSound, startAddressCheckout]);
+
+            const handleAddressContinue = useCallback(() => {
+                if (!digitsRef.current) return;
+                setAddressStep('street');
+            }, []);
+
+            const handleSelectBuilding = useCallback((b) => {
+                setSelectedBuilding(b);
+                resolveAddress(b, digitsRef.current);
+            }, [resolveAddress]);
+
+            // Back to unit entry (from the street step or the chip on it)
+            const handleEditUnit = useCallback(() => {
+                setSelectedBuilding(null);
+                setAddressStep('unit');
+            }, []);
+
+            const handleAddressTryAgain = useCallback(() => {
+                setSelectedBuilding(null);
+                setAddressStep('unit');
+                setDigits('');
+                setPhase('lookup');
+            }, []);
+
             const handleSelectAddress = useCallback((item) => {
                 startAddressCheckout(item.name);
             }, [startAddressCheckout]);
 
-            // Toggle a lookup mode on/off from the settings panel
-            const handleToggleMode = useCallback((value) => {
-                setEnabledModes(prev => {
-                    const next = { ...prev, [value]: !prev[value] };
-                    if (!Object.values(next).some(Boolean)) return prev; // keep at least one
-                    // If the active mode was just disabled, switch to the first still-enabled one
-                    setMode(cur => (next[cur] ? cur : firstEnabledMode(next)));
-                    return next;
-                });
-                // Reset any in-progress lookup state so the new mode starts clean
+            // Demo shortcut: jump straight to a known-good (or known-bad) address
+            const handleFillAddress = useCallback((unit, buildingKey) => {
+                const b = BUILDINGS.find(x => x.key === buildingKey);
+                if (!b) return;
+                setMode('address');
+                setDigits(unit);
+                setAddressStep('street');
+                setSelectedBuilding(b);
+                setTimeout(() => resolveAddress(b, unit), 180);
+            }, [resolveAddress]);
+
+            // ── Demo-bar controls ────────────────────────────────────────
+            const clearLookupState = useCallback(() => {
                 setDigits('');
                 setMatches([]);
                 setCardEnd('');
                 setOrderNum('');
                 setSelectedBuilding(null);
+                setAddressStep('unit');
+                setPhase('lookup');
+            }, []);
+
+            // Keep the address bar in step with the demo bar, so whatever a
+            // stakeholder is looking at is also what they get if they copy the
+            // URL. (Sending a link that opened on the wrong venue is exactly how
+            // this got confusing the first time round.) replaceState avoids
+            // firing the hashchange listener below.
+            const syncUrlToModes = useCallback((next) => {
+                try {
+                    const alias = { orderId: 'order', lastFour: 'last4', address: 'address' };
+                    const list = [alias[primaryOf(next)]];
+                    if (next.qr) list.push('qr');
+                    window.history.replaceState(null, '', `${window.location.pathname}?modes=${list.join(',')}`);
+                } catch (_) {}
+            }, []);
+
+            // Venues are mutually exclusive: picking one replaces the other two.
+            // The USEFULL QR add-on is preserved across venue switches.
+            const handleSetPrimary = useCallback((value) => {
+                setEnabledModes(prev => {
+                    const next = { orderId: false, lastFour: false, address: false, qr: prev.qr };
+                    next[value] = true;
+                    syncUrlToModes(next);
+                    return next;
+                });
+                setMode(value);
+                clearLookupState();
+            }, [clearLookupState, syncUrlToModes]);
+
+            const handleToggleQr = useCallback(() => {
+                setEnabledModes(prev => {
+                    const next = { ...prev, qr: !prev.qr };
+                    // Turning QR off while it is the active view falls back to the venue
+                    setMode(cur => (cur === 'qr' && !next.qr ? primaryOf(next) : cur));
+                    syncUrlToModes(next);
+                    return next;
+                });
+                clearLookupState();
+            }, [clearLookupState, syncUrlToModes]);
+
+            const handleTogglePrefilter = useCallback(() => {
+                setPrefilterStreets(v => !v);
             }, []);
 
             // Container scan
@@ -1802,6 +1876,7 @@
                 setMatches([]);
                 setCardEnd('');
                 setSelectedBuilding(null);
+                setAddressStep('unit');
             }, [phase]);
 
             // Camera should run when in QR-lookup mode OR while scanning containers
@@ -1809,11 +1884,17 @@
 
             // Physical keyboard input — useful for demos
             useEffect(() => {
-                const typingMode = mode === 'lastFour' || mode === 'orderId' || (mode === 'address' && selectedBuilding);
+                const typingMode = mode === 'lastFour' || mode === 'orderId'
+                    || (mode === 'address' && addressStep === 'unit');
                 if (phase !== 'lookup' || !typingMode) return;
                 const onKey = (e) => {
                     if (e.metaKey || e.ctrlKey || e.altKey) return;
-                    if (showAccessModal || showMockSettings) return;
+                    if (showAccessModal) return;
+                    if (e.key === 'Enter' && mode === 'address') {
+                        e.preventDefault();
+                        handleAddressContinue();
+                        return;
+                    }
                     if (/^[0-9]$/.test(e.key)) {
                         e.preventDefault();
                         handleDigit(e.key);
@@ -1824,22 +1905,47 @@
                 };
                 window.addEventListener('keydown', onKey);
                 return () => window.removeEventListener('keydown', onKey);
-            }, [phase, mode, selectedBuilding, showAccessModal, showMockSettings, handleDigit, handleBackspace]);
+            }, [phase, mode, addressStep, showAccessModal, handleDigit, handleBackspace, handleAddressContinue]);
 
             // ========================================================
             // RENDER
             // ========================================================
-            const showAddressPicker = phase === 'lookup' && mode === 'address' && !selectedBuilding;
-            const showKeypad   = phase === 'lookup' && (mode === 'lastFour' || mode === 'orderId' || (mode === 'address' && selectedBuilding));
+            // Address is a two-step flow: unit number, then street.
+            const showAddressUnit   = phase === 'lookup' && isAddress && addressStep === 'unit';
+            const showAddressStreet = phase === 'lookup' && isAddress && addressStep === 'street';
+            const showKeypad   = phase === 'lookup' && (mode === 'lastFour' || mode === 'orderId');
             const showQRLookup = phase === 'lookup' && mode === 'qr';
             const showScanning = phase === 'scanning';
 
+            // With prefiltering on, only offer streets that have this unit number.
+            const streetOptions = (showAddressStreet && prefilterStreets && digits)
+                ? buildingsWithUnit(digits)
+                : BUILDINGS;
+
             return (
-                <div className="h-full w-full flex flex-col overflow-hidden select-none relative"
+                <div className="h-full w-full flex flex-col overflow-hidden select-none"
+                     style={{ backgroundColor: '#1b2330' }}>
+
+                {/* Scaffolding — sits outside the kiosk frame on purpose */}
+                <DemoBar
+                    enabledModes={enabledModes}
+                    onSetPrimary={handleSetPrimary}
+                    onToggleQr={handleToggleQr}
+                    prefilterStreets={prefilterStreets}
+                    onTogglePrefilter={handleTogglePrefilter}
+                    onFillCard={handleFillCard}
+                    onFillOrder={handleFillOrder}
+                    onFillAddress={handleFillAddress}
+                    onSimulateScan={handleMockCupScan}
+                    scanEnabled={phase === 'scanning'}
+                />
+
+                <div className="flex-1 w-full flex flex-col overflow-hidden select-none relative"
                      style={{
                          backgroundColor: '#EEF2F3',
                          padding: isPortrait ? '14px 16px 10px' : '18px 22px 14px',
                          gap: isPortrait ? 12 : 16,
+                         minHeight: 0,
                      }}>
 
                     {/* HEADER */}
@@ -1868,13 +1974,13 @@
                     {/* BODY — single persistent container; sub-views toggle visibility */}
                     <div style={{ flex: 1, minHeight: 0, position: 'relative' }}>
 
-                        {/* ADDRESS BUILDING PICKER VIEW */}
+                        {/* ADDRESS STEP 1 — UNIT NUMBER (freeform) */}
                         <div style={{
                             position: 'absolute', inset: 0,
-                            display: showAddressPicker ? 'flex' : 'none',
+                            display: showAddressUnit ? 'flex' : 'none',
                             flexDirection: 'column',
                             alignItems: 'center', justifyContent: 'center',
-                            gap: isPortrait ? 22 : 28,
+                            gap: isPortrait ? 16 : 20,
                             padding: isPortrait ? '8px 0' : '4px 0',
                         }}>
                             <div className="text-center" style={{ padding: '0 12px' }}>
@@ -1883,33 +1989,85 @@
                                     Look Up Address
                                 </h1>
                             </div>
-                            <div style={{
-                                display: 'flex', flexWrap: 'wrap', gap: 14,
-                                justifyContent: 'center', maxWidth: 760, padding: '0 12px',
-                            }}>
-                                {BUILDINGS.map(b => (
-                                    <button
-                                        key={b.name}
-                                        onClick={() => handleSelectBuilding(b)}
-                                        className="font-display font-bold name-pick"
-                                        style={{
-                                            display: 'flex', alignItems: 'center', gap: 12,
-                                            padding: '20px 28px',
-                                            borderRadius: 16,
-                                            border: '1.5px solid #e2e8f0',
-                                            backgroundColor: '#fff',
-                                            color: '#1e293b',
-                                            fontSize: '1.5rem',
-                                            cursor: 'pointer',
-                                            boxShadow: '0 2px 8px rgba(15,23,42,0.05)',
-                                            transition: 'border-color 0.15s ease, background-color 0.15s ease, transform 0.08s ease',
-                                        }}
-                                    >
-                                        <IconBuilding style={{ width: 26, height: 26, color: TEAL }} />
-                                        {b.name}
-                                    </button>
-                                ))}
+                            <FreeformDisplay digits={digits} />
+                            <NumericKeypad
+                                onDigit={handleDigit}
+                                onBackspace={handleBackspace}
+                                disabled={digits.length >= MAX_UNIT_LEN}
+                                onSubmit={handleAddressContinue}
+                                submitLabel="Continue"
+                                submitDisabled={digits.length === 0}
+                            />
+                        </div>
+
+                        {/* ADDRESS STEP 2 — STREET */}
+                        <div style={{
+                            position: 'absolute', inset: 0,
+                            display: showAddressStreet ? 'flex' : 'none',
+                            flexDirection: 'column',
+                            alignItems: 'center', justifyContent: 'center',
+                            gap: isPortrait ? 20 : 26,
+                            padding: isPortrait ? '8px 0' : '4px 0',
+                        }}>
+                            <div className="text-center" style={{ padding: '0 12px' }}>
+                                <h1 className="font-display font-extrabold leading-tight"
+                                    style={{ color: TEAL, fontSize: isPortrait ? '2.2rem' : '2.6rem' }}>
+                                    Look Up Address
+                                </h1>
                             </div>
+
+                            {/* The number already entered, tap to correct it */}
+                            <button
+                                onClick={handleEditUnit}
+                                className="font-display font-bold name-pick"
+                                style={{
+                                    display: 'inline-flex', alignItems: 'center', gap: 10,
+                                    padding: '10px 18px',
+                                    borderRadius: 999,
+                                    border: `1.5px solid ${TEAL}33`,
+                                    background: TEAL_LIGHT,
+                                    color: TEAL, fontSize: '1.35rem', cursor: 'pointer',
+                                }}
+                                title="Change the unit number"
+                            >
+                                {digits}
+                                <IconX style={{ width: 12, height: 12 }} strokeWidth="2.5" />
+                            </button>
+
+                            {streetOptions.length === 0 ? (
+                                <div className="text-center font-body"
+                                     style={{ color: '#6B7280', fontSize: '1.1rem', maxWidth: 420, padding: '0 16px' }}>
+                                    No street has unit {digits}. Tap the number above to change it.
+                                </div>
+                            ) : (
+                                <div style={{
+                                    display: 'flex', flexWrap: 'wrap', gap: 14,
+                                    justifyContent: 'center', maxWidth: 760, padding: '0 12px',
+                                }}>
+                                    {streetOptions.map(b => (
+                                        <button
+                                            key={b.name}
+                                            onClick={() => handleSelectBuilding(b)}
+                                            className="font-display font-bold name-pick"
+                                            style={{
+                                                display: 'flex', alignItems: 'center', gap: 12,
+                                                padding: '20px 28px',
+                                                borderRadius: 16,
+                                                border: '1.5px solid #e2e8f0',
+                                                backgroundColor: '#fff',
+                                                color: '#1e293b',
+                                                fontSize: '1.5rem',
+                                                cursor: 'pointer',
+                                                boxShadow: '0 2px 8px rgba(15,23,42,0.05)',
+                                                transition: 'border-color 0.15s ease, background-color 0.15s ease, transform 0.08s ease',
+                                            }}
+                                        >
+                                            <IconBuilding style={{ width: 26, height: 26, color: TEAL }} />
+                                            {b.name}
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
                         </div>
 
                         {/* KEYPAD VIEW */}
@@ -1924,43 +2082,20 @@
                             <div className="text-center" style={{ padding: '0 12px' }}>
                                 <h1 className="font-display font-extrabold leading-tight"
                                     style={{ color: TEAL, fontSize: isPortrait ? '2.2rem' : '2.6rem' }}>
-                                    {mode === 'orderId' ? 'Look up order'
-                                        : mode === 'address' ? 'Look Up Address'
-                                        : 'Look up student'}
+                                    {mode === 'orderId' ? 'Look up order' : 'Look up student'}
                                 </h1>
-                                {mode !== 'address' && (
-                                    <p className="font-body mt-1.5"
-                                       style={{ color: '#6B7280', fontSize: isPortrait ? '1rem' : '1.15rem' }}>
-                                        {mode === 'orderId'
-                                            ? 'Enter the 4-digit order number from the Grubhub receipt'
-                                            : 'Enter the last 4 digits of the campus card on the Grubhub receipt'}
-                                    </p>
-                                )}
+                                <p className="font-body mt-1.5"
+                                   style={{ color: '#6B7280', fontSize: isPortrait ? '1rem' : '1.15rem' }}>
+                                    {mode === 'orderId'
+                                        ? 'Enter the 4-digit order number from the receipt'
+                                        : 'Enter the last 4 digits of the campus card from the receipt'}
+                                </p>
                             </div>
-                            {mode === 'address' && selectedBuilding && (
-                                <button
-                                    onClick={handleClearBuilding}
-                                    className="font-display font-bold name-pick"
-                                    style={{
-                                        display: 'inline-flex', alignItems: 'center', gap: 10,
-                                        padding: '10px 16px 10px 14px',
-                                        borderRadius: 999,
-                                        border: `1.5px solid ${TEAL}33`,
-                                        background: TEAL_LIGHT,
-                                        color: TEAL, fontSize: '1.15rem', cursor: 'pointer',
-                                    }}
-                                    title="Choose a different building"
-                                >
-                                    <IconBuilding style={{ width: 20, height: 20 }} />
-                                    {selectedBuilding.name}
-                                    <IconX style={{ width: 12, height: 12 }} strokeWidth="2.5" />
-                                </button>
-                            )}
-                            <DigitDisplay digits={digits} length={digitLen} />
+                            <DigitDisplay digits={digits} length={FIXED_LEN} />
                             <NumericKeypad
                                 onDigit={handleDigit}
                                 onBackspace={handleBackspace}
-                                disabled={digits.length >= digitLen}
+                                disabled={digits.length >= FIXED_LEN}
                             />
                         </div>
 
@@ -2043,35 +2178,7 @@
                     {/* FOOTER */}
                     <div className="shrink-0 flex items-center gap-3"
                          style={{ borderTop: '1px solid rgba(0,140,149,0.12)', paddingTop: 12 }}>
-                        <div ref={mockPanelRef} style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 8 }}>
-                            {showMockSettings && (
-                                <div style={{
-                                    position: 'absolute',
-                                    left: 0, bottom: 'calc(100% + 12px)',
-                                    zIndex: 40,
-                                }}>
-                                    <MockSettingsPanel
-                                        containerSuccessSound={containerSuccessSound}
-                                        onContainerSuccessSoundChange={(e) => setContainerSuccessSound(e.target.value)}
-                                        onPreviewContainerSuccessSound={() => playSound(containerSuccessSound)}
-                                        finalSuccessSound={finalSuccessSound}
-                                        onFinalSuccessSoundChange={(e) => setFinalSuccessSound(e.target.value)}
-                                        onPreviewFinalSuccessSound={() => playSound(finalSuccessSound)}
-                                        errorSound={errorSound}
-                                        onErrorSoundChange={(e) => setErrorSound(e.target.value)}
-                                        onPreviewErrorSound={() => playSound(errorSound)}
-                                        onFillCard={handleFillCard}
-                                        onFillOrder={handleFillOrder}
-                                        enabledModes={enabledModes}
-                                        onToggleMode={handleToggleMode}
-                                    />
-                                </div>
-                            )}
-                            <SettingsButton onPress={() => setShowMockSettings(v => !v)} />
-                            <CloseButton onPress={() => setShowAccessModal(true)} />
-                            <div style={{ width: 14 }} />
-                            <CupScanButton onPress={handleMockCupScan} disabled={phase !== 'scanning'} />
-                        </div>
+                        <CloseButton onPress={() => setShowAccessModal(true)} />
 
                         <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 12 }}>
                             {phase === 'scanning' && (
@@ -2122,6 +2229,7 @@
                         />
                     )}
                     <OutcomeModal data={phase === 'success' ? successData : null} onDone={resetAll} />
+                </div>
                 </div>
             );
         };

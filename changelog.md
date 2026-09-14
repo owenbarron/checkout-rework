@@ -1,5 +1,28 @@
 # Changelog
 
+## 2026-09-14 — Session 6
+
+### Address lookup — reads like a written address (MJ's feedback)
+- Flipped the order: **unit number first, then street**. Previously street-then-number, which reads backwards.
+- Unit entry is now **freeform** (one growing field, not a fixed row of digit boxes) since unit numbers vary in length. It never auto-submits — staff confirm with **Continue** (or Enter).
+- Resolution moved off digit-count and onto street selection (`resolveAddress`), which is what made freeform possible.
+- Added **Prefilter streets** toggle (default **off**): when on, only streets that actually contain the entered unit number are offered. e.g. unit 150 → Canyonview and Villas only.
+- Address labels now read number-first too: **"C150 Canyonview"**, "101 Garden Terrace" (was "Canyonview C150").
+
+### "Rooms" → "Units" (senior living has houses, not just rooms)
+- Renamed `BUILDING_ROOMS` → `BUILDING_UNITS` and all related copy: "No resident is registered at that unit", "Try a different unit", "Select the unit".
+
+### Demo controller bar — config out of hiding
+- Stakeholders kept missing config behind the settings gear (and one venue's copy got mistaken for another's), so venue selection, the QR add-on and the test entries moved to a **dark bar above the kiosk frame** that reads as scaffolding, not product.
+- **Venue** is a 3-way exclusive switch: **Illumia** (Order ID) · **Grubhub** (Account · Last 4) · **Senior Living** (Address). Account and Address can no longer be combined.
+- **USEFULL QR** is an add-on toggle available alongside any venue, and persists across venue switches.
+- **Test entries are contextual** to the selected venue — and the senior-living ones now show *valid* addresses (C150 Canyonview, 101 Garden Terrace, H137 Hillside, V162 Villas) plus one deliberate miss, which is what had been confusing.
+- The URL now **stays in sync** with the demo bar (`?modes=address,qr`), so a copied link always opens on whatever was on screen. Short inbound links (`#address`) still work.
+- Removed the sound selector (defaults are locked in) and the old settings panel; the simulate-scan control moved to the demo bar.
+
+### Copy
+- Dropped brand names from the lookup subheaders: "Enter the 4-digit order number from the receipt" and "Enter the last 4 digits of the campus card from the receipt". Brands now appear only as demo-bar venue labels.
+
 ## 2026-07-14 — Session 5
 
 ### Staff Checkout (formerly Grubhub Lookup)
