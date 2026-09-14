@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-09-14 — Session 8
+
+### Full keyboard, and letters no longer assumed to mean "wing"
+- The letter pad is now a **full A–Z keyboard** laid out QWERTY-style with a number row, instead of the three roster-derived keys. Letters can mean anything — compass sections here, apartment letters (120A/120B) elsewhere — so the pad no longer narrows itself to one customer's data.
+- Dropped "wing" from the code and UI. `wingPart` → `letterPart`; the global `WING_NAMES` became an optional per-street `letterLabels` map. A street that defines a meaning spells it out ("101 North Garden Terrace"); one that doesn't leaves the letter attached to the number ("H120A Hillside"), so arbitrary apartment letters render correctly.
+- Demo-bar toggle renamed to **Full keyboard** / **Number only + pick** (default stays number-only with disambiguation).
+- Entry rules relaxed accordingly: a unit starts with its number, then any mix of digits and letters (max 8), rather than the old "one trailing letter" rule.
+- Physical keyboard accepts any A–Z when the full keyboard is on.
+- Address entry top-aligns and scrolls when the keyboard is showing, so the taller layout can't ride up over the header on a short screen.
+
 ## 2026-09-14 — Session 7
 
 ### Real Glen data + wing disambiguation

@@ -123,20 +123,25 @@
         // address reads: number first, street second — e.g. "C137 Canyonview".
         // `prefix` is the street's unit-code letter (Garden Terrace has none).
         //
-        // Garden Terrace is one street split into three wings (South/North/West),
-        // and the wings reuse the same unit numbers — 101 exists in all three.
+        // Garden Terrace is one street split into three sections (South/North/West),
+        // and the sections reuse the same unit numbers — 101 exists in all three.
         // That's the ambiguity the two strategies below exist to resolve.
-        const WING_NAMES = { S: 'South', N: 'North', W: 'West', E: 'East' };
+        //
+        // Unit letters are NOT assumed to mean anything in particular: they may be
+        // compass sections here, but elsewhere they're just apartment letters
+        // (120A / 120B). A street may optionally supply `letterLabels` to spell a
+        // letter out; without it the letter renders exactly as stored.
         const BUILDINGS = [
             { name: 'Canyonview',     prefix: 'C', key: 'Canyonview'    },
             { name: 'Gardenview',     prefix: 'G', key: 'Gardenview'    },
             { name: 'Hillside',       prefix: 'H', key: 'Hillside'      },
-            { name: 'Garden Terrace', prefix: '',  key: 'GardenTerrace', winged: true },
+            { name: 'Garden Terrace', prefix: '',  key: 'GardenTerrace',
+              letterLabels: { S: 'South', N: 'North', W: 'West' } },
             { name: 'Villas',         prefix: 'V', key: 'Villas'        },
         ];
 
         // Live unit numbers per street, from the Glen's final account list (288
-        // accounts). Garden Terrace units carry their wing letter: "101N".
+        // accounts). Garden Terrace units carry their section letter: "101N".
         // ("Units" not "rooms" — in senior living these are often houses.)
         const BUILDING_UNITS = {
             Canyonview: ['137','138','139','140','142','143','145','146','150','151','153','154','155','156','157','158','160','161','162','238','239','241','242','243','244','246','250','251','252','254','255','257','258','259','260','261','262','337','339','340','341','344','345','346','347','348','350','351','352','353','354','356','357','358','361','362'],
@@ -146,37 +151,39 @@
             GardenTerrace: ['101S','103S','104S','107S','108S','202S','203S','205S','206S','208S','101N','102N','103N','104N','105N','106N','107N','108N','201N','202N','204N','205N','206N','208N','101W','102W','103W','104W','105W','107W','108W','201W','202W','203W','204W','205W','206W','207W','208W'],
         };
 
-        // "101N" → number "101", wing "N". Typed input is parsed the same way,
+        // "101N" → number "101", letters "N". Typed input is parsed the same way,
         // so staff may type either "101" or "101N".
         const numericPart = (unit) => String(unit).match(/^\s*(\d+)/)?.[1] ?? '';
-        const wingPart = (unit) => {
+        const letterPart = (unit) => {
             const s = String(unit).trim().toUpperCase();
             return s.slice(numericPart(s).length);
         };
 
-        // Letters offered on the alphanumeric keypad — derived from the data, so
-        // the pad only ever shows wings that actually exist.
-        const WING_LETTERS = Array.from(new Set(
-            Object.values(BUILDING_UNITS).flat().map(wingPart).filter(Boolean)
-        )).sort();
+        // Full alphabet, laid out as a familiar keyboard. Letters can carry any
+        // meaning (section, apartment, building), so the pad is not narrowed to
+        // whatever this one roster happens to use.
+        const KEY_ROWS = ['QWERTYUIOP', 'ASDFGHJKL', 'ZXCVBNM'].map(r => r.split(''));
 
         const formatAddress = (building, unit) => {
-            const num  = numericPart(unit);
-            const wing = wingPart(unit);
-            const wingLabel = wing ? ` ${WING_NAMES[wing] || wing}` : '';
-            return `${building.prefix}${num}${wingLabel} ${building.name}`;
+            const num     = numericPart(unit);
+            const letters = letterPart(unit);
+            const labels  = building.letterLabels || {};
+            // Spell the letter out when the street defines a meaning for it,
+            // otherwise leave it attached to the number: "120A Hillside".
+            const tail = letters ? (labels[letters] ? ` ${labels[letters]}` : letters) : '';
+            return `${building.prefix}${num}${tail} ${building.name}`;
         };
 
         // Every registered unit in `building` matching what was typed.
-        // A typed wing ("101N") matches exactly; a bare number ("101") matches
-        // every wing, which is what surfaces the disambiguation picker.
+        // Typed letters ("101N") match exactly; a bare number ("101") matches
+        // every unit sharing it, which is what surfaces the disambiguation picker.
         const resolveAddressMatches = (building, typed) => {
-            const units = BUILDING_UNITS[building.key] || [];
-            const num   = numericPart(typed);
-            const wing  = wingPart(typed);
+            const units   = BUILDING_UNITS[building.key] || [];
+            const num     = numericPart(typed);
+            const letters = letterPart(typed);
             return units
-                .filter(u => wing ? (numericPart(u) === num && wingPart(u) === wing)
-                                  : numericPart(u) === num)
+                .filter(u => letters ? (numericPart(u) === num && letterPart(u) === letters)
+                                     : numericPart(u) === num)
                 .map(u => ({ name: formatAddress(building, u), unit: u }));
         };
 
@@ -184,7 +191,6 @@
         // "prefilter streets" behaviour in the address lookup.
         const buildingsWithUnit = (typed) =>
             BUILDINGS.filter(b => resolveAddressMatches(b, typed).length > 0);
-
 
         // Lookup modes, in display order.
         const MODE_META = [
@@ -206,8 +212,8 @@
         // Demo test entries, shown contextually for whichever mode is selected.
         const MOCK_ADDRESSES = [
             { unit: '137',  key: 'Canyonview'    },
-            { unit: '101',  key: 'GardenTerrace', note: 'ambiguous — 3 wings' },
-            { unit: '101N', key: 'GardenTerrace', note: 'wing typed directly' },
+            { unit: '101',  key: 'GardenTerrace', note: 'ambiguous — 3 sections' },
+            { unit: '101N', key: 'GardenTerrace', note: 'letter typed directly' },
             { unit: '103',  key: 'Hillside'      },
             { unit: '162',  key: 'Villas'        },
         ];
@@ -704,7 +710,7 @@
         // ============================================================
         // NUMERIC KEYPAD
         // ============================================================
-        const NumericKeypad = ({ onDigit, onBackspace, disabled, onSubmit, submitLabel, submitDisabled, letters }) => {
+        const NumericKeypad = ({ onDigit, onBackspace, disabled, onSubmit, submitLabel, submitDisabled }) => {
             const keyStyle = {
                 width: '100%',
                 aspectRatio: '1.6 / 1',
@@ -753,37 +759,6 @@
                         <IconBackspace style={{ width: 32, height: 32, color: '#6B7280' }} />
                     </Key>
                 </div>
-                {letters && letters.length > 0 && (
-                    // Wing letters, derived from the roster — a full A–Z pad would
-                    // be mostly dead keys on a kiosk.
-                    <div style={{
-                        display: 'grid',
-                        gridTemplateColumns: `repeat(${letters.length}, 1fr)`,
-                        gap: 12, width: '100%',
-                    }}>
-                        {letters.map(L => (
-                            <button
-                                key={L}
-                                type="button"
-                                aria-label={`Wing ${L}`}
-                                onClick={() => onDigit(L)}
-                                className="keypad-key font-display font-bold"
-                                style={{
-                                    width: '100%', aspectRatio: '1.6 / 1', borderRadius: 16,
-                                    border: `1px solid ${TEAL}55`, backgroundColor: TEAL_LIGHT,
-                                    cursor: 'pointer', boxShadow: '0 2px 6px rgba(0,0,0,0.05)',
-                                    display: 'flex', flexDirection: 'column',
-                                    alignItems: 'center', justifyContent: 'center', lineHeight: 1.1,
-                                }}
-                            >
-                                <span style={{ fontSize: '1.7rem', color: TEAL }}>{L}</span>
-                                <span className="font-body" style={{ fontSize: '0.62rem', color: TEAL, opacity: 0.8 }}>
-                                    {WING_NAMES[L] || ''}
-                                </span>
-                            </button>
-                        ))}
-                    </div>
-                )}
                 {onSubmit && (
                     <button
                         type="button"
@@ -805,6 +780,82 @@
                         {submitLabel || 'Continue'}
                     </button>
                 )}
+                </div>
+            );
+        };
+
+        // ============================================================
+        // FULL KEYBOARD — numbers + A–Z, for units with meaningful letters
+        // ============================================================
+        // Laid out like a real keyboard rather than the 3×4 numeric pad, because
+        // once letters are in play that's the layout people already know. Used
+        // when unit codes can carry letters of any meaning (120W/120E, 120A/120B).
+        const FullKeyboard = ({ onKey, onBackspace, onSubmit, submitLabel, submitDisabled }) => {
+            const keyBase = {
+                borderRadius: 12,
+                border: '1px solid #e5e7eb',
+                backgroundColor: '#fff',
+                boxShadow: '0 2px 6px rgba(0,0,0,0.05)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                cursor: 'pointer',
+                height: 56,
+                padding: 0,
+            };
+            const Key = ({ label, onClick, ariaLabel, flex = 1, children }) => (
+                <button
+                    type="button"
+                    aria-label={ariaLabel || label}
+                    onClick={onClick}
+                    className="keypad-key font-display font-bold"
+                    style={{ ...keyBase, flex }}
+                >
+                    {children || <span style={{ fontSize: '1.5rem', color: '#1e293b' }}>{label}</span>}
+                </button>
+            );
+            const Row = ({ children }) => (
+                <div style={{ display: 'flex', gap: 8, width: '100%' }}>{children}</div>
+            );
+
+            return (
+                <div style={{ width: '100%', maxWidth: 660, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    <Row>
+                        {'1234567890'.split('').map(d => (
+                            <Key key={d} label={d} ariaLabel={`Digit ${d}`} onClick={() => onKey(d)} />
+                        ))}
+                    </Row>
+                    {KEY_ROWS.map((row, i) => (
+                        <Row key={i}>
+                            {/* nudge the lower rows in, the way a keyboard staggers */}
+                            {i > 0 && <div style={{ flex: i === 1 ? 0.5 : 0.25 }} />}
+                            {row.map(L => (
+                                <Key key={L} label={L} ariaLabel={`Letter ${L}`} onClick={() => onKey(L)} />
+                            ))}
+                            {i === 2 && (
+                                <Key ariaLabel="Backspace" flex={1.6} onClick={onBackspace}>
+                                    <IconBackspace style={{ width: 26, height: 26, color: '#6B7280' }} />
+                                </Key>
+                            )}
+                            {i > 0 && <div style={{ flex: i === 1 ? 0.5 : 0.25 }} />}
+                        </Row>
+                    ))}
+                    {onSubmit && (
+                        <button
+                            type="button"
+                            onClick={() => { if (!submitDisabled) onSubmit(); }}
+                            className="font-display font-extrabold uppercase tracking-wider"
+                            style={{
+                                width: '100%', marginTop: 4, padding: '16px', borderRadius: 14,
+                                border: 'none',
+                                backgroundColor: submitDisabled ? '#cbd5e1' : TEAL,
+                                color: '#fff', fontSize: '1.05rem',
+                                cursor: submitDisabled ? 'default' : 'pointer',
+                                boxShadow: submitDisabled ? 'none' : `0 8px 22px ${TEAL}55`,
+                                transition: 'background-color 0.18s ease, box-shadow 0.18s ease',
+                            }}
+                        >
+                            {submitLabel || 'Continue'}
+                        </button>
+                    )}
                 </div>
             );
         };
@@ -1427,13 +1478,13 @@
                         </button>
                     )}
 
-                    {/* How to resolve a unit that exists in several wings */}
+                    {/* How unit letters are entered */}
                     {primary === 'address' && (
                         <button type="button" onClick={onToggleAlphaUnits}
                                 className="font-body"
                                 title={alphaUnits
-                                    ? 'Type the wing letter with the unit, e.g. 101N'
-                                    : 'Pick the wing from a list after choosing the street'}
+                                    ? 'Full keyboard — type letters with the number, e.g. 101N or 120A'
+                                    : 'Number only — if it matches more than one unit, pick from a list after choosing the street'}
                                 style={{
                                     display: 'flex', alignItems: 'center', gap: 8,
                                     padding: '6px 10px', borderRadius: 8,
@@ -1442,7 +1493,7 @@
                                     color: alphaUnits ? '#e2e8f0' : '#94a3b8',
                                     cursor: 'pointer', fontSize: '0.82rem',
                                 }}>
-                            {alphaUnits ? 'Alphanumeric units' : 'Wing disambiguation'}
+                            {alphaUnits ? 'Full keyboard' : 'Number only + pick'}
                             <Switch on={alphaUnits} />
                         </button>
                     )}
@@ -1538,10 +1589,10 @@
             // When on, the street list is narrowed to streets that actually have
             // that unit number. Off by default — staff usually know the street.
             const [prefilterStreets, setPrefilterStreets]   = useState(false);
-            // How to resolve a unit number that exists in several wings of one
-            // street (Garden Terrace 101 South/North/West):
-            //   off (default) → pick the wing from a list after choosing the street
-            //   on            → type the wing letter directly, e.g. "101N"
+            // How to handle unit codes that carry letters (Garden Terrace
+            // 101 South/North/West, or apartment 120A/120B):
+            //   off (default) → number only; pick from a list if it's ambiguous
+            //   on            → full keyboard, type the letters directly
             const [alphaUnits, setAlphaUnits]               = useState(false);
 
             // Sound prefs
@@ -1566,7 +1617,7 @@
 
             // Order ID / Last 4 are fixed-width; unit numbers are freeform.
             const FIXED_LEN = 4;
-            const MAX_UNIT_LEN = 6;
+            const MAX_UNIT_LEN = 8;
             const isAddress = mode === 'address';
 
             // Orientation
@@ -1704,14 +1755,15 @@
                     // Unit numbers vary in length, so address entry never
                     // auto-submits — staff confirm with Continue.
                     if (address) {
-                        const isLetter = /[A-Za-z]/.test(d);
-                        // A wing letter only ever trails the number, and only one.
-                        if (isLetter) {
-                            if (!prev || wingPart(prev)) return prev;
+                        if (prev.length >= MAX_UNIT_LEN) return prev;
+                        // An address starts with its number; letters can follow in
+                        // any arrangement, since they may be a section, an
+                        // apartment letter, or something else entirely.
+                        if (/[A-Za-z]/.test(d)) {
+                            if (!prev) return prev;
                             return prev + d.toUpperCase();
                         }
-                        if (wingPart(prev)) return prev;   // number can't follow a wing
-                        return prev.length >= MAX_UNIT_LEN ? prev : prev + d;
+                        return prev + d;
                     }
                     if (prev.length >= FIXED_LEN) return prev;
                     const next = prev + d;
@@ -1999,10 +2051,8 @@
                         handleAddressContinue();
                         return;
                     }
-                    // Wing letters are typeable too when alphanumeric entry is on
-                    if (alphaUnits && mode === 'address'
-                        && /^[A-Za-z]$/.test(e.key)
-                        && WING_LETTERS.includes(e.key.toUpperCase())) {
+                    // Letters are typeable too when the full keyboard is on
+                    if (alphaUnits && mode === 'address' && /^[A-Za-z]$/.test(e.key)) {
                         e.preventDefault();
                         handleDigit(e.key);
                         return;
@@ -2093,8 +2143,13 @@
                             position: 'absolute', inset: 0,
                             display: showAddressUnit ? 'flex' : 'none',
                             flexDirection: 'column',
-                            alignItems: 'center', justifyContent: 'center',
-                            gap: isPortrait ? 16 : 20,
+                            alignItems: 'center',
+                            // The full keyboard is much taller than the numeric pad;
+                            // top-align and allow scroll so it can never ride up over
+                            // the header on a short screen.
+                            justifyContent: alphaUnits ? 'flex-start' : 'center',
+                            overflowY: 'auto',
+                            gap: alphaUnits ? 12 : (isPortrait ? 16 : 20),
                             padding: isPortrait ? '8px 0' : '4px 0',
                         }}>
                             <div className="text-center" style={{ padding: '0 12px' }}>
@@ -2104,15 +2159,24 @@
                                 </h1>
                             </div>
                             <FreeformDisplay digits={digits} />
-                            <NumericKeypad
-                                onDigit={handleDigit}
-                                onBackspace={handleBackspace}
-                                disabled={digits.length >= MAX_UNIT_LEN}
-                                onSubmit={handleAddressContinue}
-                                submitLabel="Continue"
-                                submitDisabled={digits.length === 0}
-                                letters={alphaUnits ? WING_LETTERS : null}
-                            />
+                            {alphaUnits ? (
+                                <FullKeyboard
+                                    onKey={handleDigit}
+                                    onBackspace={handleBackspace}
+                                    onSubmit={handleAddressContinue}
+                                    submitLabel="Continue"
+                                    submitDisabled={digits.length === 0}
+                                />
+                            ) : (
+                                <NumericKeypad
+                                    onDigit={handleDigit}
+                                    onBackspace={handleBackspace}
+                                    disabled={digits.length >= MAX_UNIT_LEN}
+                                    onSubmit={handleAddressContinue}
+                                    submitLabel="Continue"
+                                    submitDisabled={digits.length === 0}
+                                />
+                            )}
                         </div>
 
                         {/* ADDRESS STEP 2 — STREET */}
