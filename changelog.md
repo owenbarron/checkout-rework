@@ -1,5 +1,21 @@
 # Changelog
 
+## 2026-09-14 — Session 7
+
+### Real Glen data + wing disambiguation
+- Replaced the embedded unit roster with **the final live account list** (288 accounts). The earlier spreadsheet was the initial draft — e.g. Canyonview had 75 units in it but has 56 live.
+- The final list confirmed the number-first label format already in use (`C137 Canyonview`).
+- **Garden Terrace is one street with three wings** — South / North / West (`St`/`Nt`/`Wt` in the account emails) — and the wings reuse unit numbers, so 101 exists in all three. Units now carry their wing (`101N`) and render as **"101 North Garden Terrace"**.
+
+### Two strategies for resolving a wing, toggleable
+- **Wing disambiguation (default, off-position):** type `101`, pick Garden Terrace, then choose from `101 South / 101 North / 101 West`.
+- **Alphanumeric units:** the keypad gains wing keys (N/S/W, labelled South/North/West) so staff type `101N` directly and skip the picker. The letter keys are **derived from the roster**, so the pad only shows wings that exist rather than a mostly-dead A–Z grid. Wing letters are typeable on a physical keyboard too.
+- The two compose safely: with alphanumeric on, typing a bare `101` still falls back to the picker rather than failing.
+- Entry rules: a wing letter only ever trails the number, and only one.
+
+### Copy
+- "Next student" → **"Next resident"** in senior living, and the USEFULL QR screen now reads "Scan the resident's USEFULL QR". Derived from the **venue**, not the active view, since QR is an add-on that can sit on top of any venue — campus venues still say "student".
+
 ## 2026-09-14 — Session 6
 
 ### Address lookup — reads like a written address (MJ's feedback)

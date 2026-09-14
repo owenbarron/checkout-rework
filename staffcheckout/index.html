@@ -119,47 +119,72 @@
             '7777': { name: 'Sofia Nakamura'  },
         };
 
-        // Senior-living buildings (Address lookup). A unit is written the way an
-        // address reads: number first, street second — e.g. "C150 Canyonview",
-        // "101 Garden Terrace". `prefix` is the building's unit-code letter.
+        // Senior-living streets (Address lookup). A unit is written the way an
+        // address reads: number first, street second — e.g. "C137 Canyonview".
+        // `prefix` is the street's unit-code letter (Garden Terrace has none).
+        //
+        // Garden Terrace is one street split into three wings (South/North/West),
+        // and the wings reuse the same unit numbers — 101 exists in all three.
+        // That's the ambiguity the two strategies below exist to resolve.
+        const WING_NAMES = { S: 'South', N: 'North', W: 'West', E: 'East' };
         const BUILDINGS = [
-            { name: 'Canyonview',    prefix: 'C', key: 'Canyonview'    },
-            { name: 'Gardenview',    prefix: 'G', key: 'Gardenview'    },
-            { name: 'Hillside',      prefix: 'H', key: 'Hillside'      },
-            { name: 'Garden Terrace', prefix: '', key: 'GardenTerrace' },
-            { name: 'Villas',        prefix: 'V', key: 'Villas'        },
+            { name: 'Canyonview',     prefix: 'C', key: 'Canyonview'    },
+            { name: 'Gardenview',     prefix: 'G', key: 'Gardenview'    },
+            { name: 'Hillside',       prefix: 'H', key: 'Hillside'      },
+            { name: 'Garden Terrace', prefix: '',  key: 'GardenTerrace', winged: true },
+            { name: 'Villas',         prefix: 'V', key: 'Villas'        },
         ];
 
-        // Valid unit numbers per building, from the Glen resident roster.
+        // Live unit numbers per street, from the Glen's final account list (288
+        // accounts). Garden Terrace units carry their wing letter: "101N".
         // ("Units" not "rooms" — in senior living these are often houses.)
         const BUILDING_UNITS = {
-            Canyonview: ['137','138','139','140','141','142','143','144','145','146','147','148','150','151','152','153','154','155','156','157','158','159','160','161','162','237','238','239','240','241','242','243','244','245','246','247','248','250','251','252','253','254','255','256','257','258','259','260','261','262','337','338','339','340','341','342','343','344','345','346','347','348','350','351','352','353','354','355','356','357','358','359','360','361','362'],
-            Gardenview: ['101','103','104','105','106','107','108','109','110','112','114','115','116','117','119','120','121','122','124','126','127','128','129','130','131','132','133','134','135','201','203','204','205','206','207','208','209','210','212','214','215','216','217','219','220','221','222','224','226','227','228','229','230','231','232','233','234','235','301','303','304','305','306','307','308','309','310','312','314','315','316','317','319','320','321','322','324','326','327','328','329','330','331','332','333','334','335'],
-            Hillside: ['101','103','104','105','106','107','108','109','110','111','112','114','115','116','117','118','119','120','121','122','123','125','126','128','129','130','131','132','133','134','135','137','138','139','140','201','202','203','204','205','206','207','208','209','210','211','212','214','215','216','217','218','219','220','221','222','223','225','226','228','229','230','231','232','233','234','235','237','238','239','240','301','302','303','304','305','306','307','308','309','310','311','312','314','315','316','317','318','319','320','321','322','323','325','326','328','329','330','331','332','333','334','335','337','338','339','340','411','415','416','417','418','420','421','422','423','426','428','429','430','431','432','433','434','435','437','438','439','440'],
-            GardenTerrace: ['101','102','103','104','105','106','107','108','201','202','203','204','205','206','207','208'],
-            Villas: ['101','102','103','104','105','106','107','108','109','110','111','112','113','114','115','116','117','118','119','120','121','122','123','124','125','126','127','128','129','130','131','132','133','134','135','136','137','138','139','140','141','142','143','144','145','146','147','148','149','150','151','152','153','154','155','156','157','158','159','160','161','162'],
+            Canyonview: ['137','138','139','140','142','143','145','146','150','151','153','154','155','156','157','158','160','161','162','238','239','241','242','243','244','246','250','251','252','254','255','257','258','259','260','261','262','337','339','340','341','344','345','346','347','348','350','351','352','353','354','356','357','358','361','362'],
+            Gardenview: ['101','104','105','106','107','108','114','115','116','117','119','120','121','124','126','128','129','131','132','201','204','206','207','208','209','210','212','214','215','216','217','220','221','222','226','227','229','230','231','232','234','235','303','304','306','307','308','309','310','315','321','324','327','328','330','331','332','333','334','335'],
+            Hillside: ['103','104','105','106','107','108','109','110','111','115','116','117','118','119','120','121','123','129','130','132','134','135','137','138','139','201','202','203','204','205','207','209','210','211','212','214','216','217','219','220','221','222','223','225','226','231','232','233','235','237','238','239','240','301','302','303','304','305','306','308','310','315','316','317','319','320','322','323','325','326','330','331','332','334','335','338','339','411','416','418','421','429','431','433','434','435','438','439','440'],
+            Villas: ['101','102','104','107','108','110','111','112','114','115','117','118','119','122','124','125','126','127','128','129','130','131','132','133','134','135','136','137','141','142','143','144','145','146','147','149','151','152','153','156','159','160','161','162'],
+            GardenTerrace: ['101S','103S','104S','107S','108S','202S','203S','205S','206S','208S','101N','102N','103N','104N','105N','106N','107N','108N','201N','202N','204N','205N','206N','208N','101W','102W','103W','104W','105W','107W','108W','201W','202W','203W','204W','205W','206W','207W','208W'],
         };
 
-        // Roster entries are usually plain numbers ("150"), but may carry a variant
-        // suffix ("137N", "137-West") when one number covers multiple units. Staff
-        // type only the number; variants are disambiguated in a picker afterwards.
+        // "101N" → number "101", wing "N". Typed input is parsed the same way,
+        // so staff may type either "101" or "101N".
         const numericPart = (unit) => String(unit).match(/^\s*(\d+)/)?.[1] ?? '';
+        const wingPart = (unit) => {
+            const s = String(unit).trim().toUpperCase();
+            return s.slice(numericPart(s).length);
+        };
 
-        // Address reads number-first, like any street address.
-        const formatAddress = (building, unit) => `${building.prefix}${unit} ${building.name}`;
+        // Letters offered on the alphanumeric keypad — derived from the data, so
+        // the pad only ever shows wings that actually exist.
+        const WING_LETTERS = Array.from(new Set(
+            Object.values(BUILDING_UNITS).flat().map(wingPart).filter(Boolean)
+        )).sort();
 
-        // Every registered unit in `building` whose number matches what was typed.
-        const resolveAddressMatches = (building, num) => {
+        const formatAddress = (building, unit) => {
+            const num  = numericPart(unit);
+            const wing = wingPart(unit);
+            const wingLabel = wing ? ` ${WING_NAMES[wing] || wing}` : '';
+            return `${building.prefix}${num}${wingLabel} ${building.name}`;
+        };
+
+        // Every registered unit in `building` matching what was typed.
+        // A typed wing ("101N") matches exactly; a bare number ("101") matches
+        // every wing, which is what surfaces the disambiguation picker.
+        const resolveAddressMatches = (building, typed) => {
             const units = BUILDING_UNITS[building.key] || [];
+            const num   = numericPart(typed);
+            const wing  = wingPart(typed);
             return units
-                .filter(u => numericPart(u) === num)
+                .filter(u => wing ? (numericPart(u) === num && wingPart(u) === wing)
+                                  : numericPart(u) === num)
                 .map(u => ({ name: formatAddress(building, u), unit: u }));
         };
 
-        // Streets that actually contain the typed unit number — powers the
-        // optional "prefilter streets" behaviour in the address lookup.
-        const buildingsWithUnit = (num) =>
-            BUILDINGS.filter(b => (BUILDING_UNITS[b.key] || []).some(u => numericPart(u) === num));
+        // Streets that actually contain what was typed — powers the optional
+        // "prefilter streets" behaviour in the address lookup.
+        const buildingsWithUnit = (typed) =>
+            BUILDINGS.filter(b => resolveAddressMatches(b, typed).length > 0);
+
 
         // Lookup modes, in display order.
         const MODE_META = [
@@ -180,10 +205,11 @@
 
         // Demo test entries, shown contextually for whichever mode is selected.
         const MOCK_ADDRESSES = [
-            { unit: '150', key: 'Canyonview'    },
-            { unit: '101', key: 'GardenTerrace' },
-            { unit: '137', key: 'Hillside'      },
-            { unit: '162', key: 'Villas'        },
+            { unit: '137',  key: 'Canyonview'    },
+            { unit: '101',  key: 'GardenTerrace', note: 'ambiguous — 3 wings' },
+            { unit: '101N', key: 'GardenTerrace', note: 'wing typed directly' },
+            { unit: '103',  key: 'Hillside'      },
+            { unit: '162',  key: 'Villas'        },
         ];
         const MOCK_ADDRESS_MISS = { unit: '999', key: 'Canyonview' };
 
@@ -678,7 +704,7 @@
         // ============================================================
         // NUMERIC KEYPAD
         // ============================================================
-        const NumericKeypad = ({ onDigit, onBackspace, disabled, onSubmit, submitLabel, submitDisabled }) => {
+        const NumericKeypad = ({ onDigit, onBackspace, disabled, onSubmit, submitLabel, submitDisabled, letters }) => {
             const keyStyle = {
                 width: '100%',
                 aspectRatio: '1.6 / 1',
@@ -727,6 +753,37 @@
                         <IconBackspace style={{ width: 32, height: 32, color: '#6B7280' }} />
                     </Key>
                 </div>
+                {letters && letters.length > 0 && (
+                    // Wing letters, derived from the roster — a full A–Z pad would
+                    // be mostly dead keys on a kiosk.
+                    <div style={{
+                        display: 'grid',
+                        gridTemplateColumns: `repeat(${letters.length}, 1fr)`,
+                        gap: 12, width: '100%',
+                    }}>
+                        {letters.map(L => (
+                            <button
+                                key={L}
+                                type="button"
+                                aria-label={`Wing ${L}`}
+                                onClick={() => onDigit(L)}
+                                className="keypad-key font-display font-bold"
+                                style={{
+                                    width: '100%', aspectRatio: '1.6 / 1', borderRadius: 16,
+                                    border: `1px solid ${TEAL}55`, backgroundColor: TEAL_LIGHT,
+                                    cursor: 'pointer', boxShadow: '0 2px 6px rgba(0,0,0,0.05)',
+                                    display: 'flex', flexDirection: 'column',
+                                    alignItems: 'center', justifyContent: 'center', lineHeight: 1.1,
+                                }}
+                            >
+                                <span style={{ fontSize: '1.7rem', color: TEAL }}>{L}</span>
+                                <span className="font-body" style={{ fontSize: '0.62rem', color: TEAL, opacity: 0.8 }}>
+                                    {WING_NAMES[L] || ''}
+                                </span>
+                            </button>
+                        ))}
+                    </div>
+                )}
                 {onSubmit && (
                     <button
                         type="button"
@@ -982,7 +1039,7 @@
         // ============================================================
         // SUCCESS / OUTCOME
         // ============================================================
-        const SuccessCard = ({ data, onDone }) => (
+        const SuccessCard = ({ data, onDone, personNoun = 'student' }) => (
             <div className="bg-white rounded-3xl shadow-2xl w-full overflow-hidden"
                  style={{ maxWidth: '36.4rem' }}>
                 <div className="p-10 text-center" style={{ backgroundColor: TEAL }}>
@@ -998,13 +1055,13 @@
                     <button onClick={onDone}
                             className="w-full py-5 rounded-xl font-display font-bold text-xl uppercase tracking-wider shadow-lg bg-white hover:bg-gray-50 transition-colors"
                             style={{ color: TEAL }}>
-                        Next student
+                        Next {personNoun}
                     </button>
                 </div>
             </div>
         );
 
-        const OutcomeModal = ({ data, onDone }) => {
+        const OutcomeModal = ({ data, onDone, personNoun }) => {
             if (!data) return null;
             return (
                 <div className="absolute inset-0 z-50 flex items-center justify-center"
@@ -1012,7 +1069,7 @@
                               WebkitBackdropFilter: 'blur(8px)', animation: 'fadeIn 0.2s ease-out' }}>
                     <div className="w-full mx-6"
                          style={{ animation: 'scaleUp 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)', maxWidth: '36.4rem' }}>
-                        <SuccessCard data={data} onDone={onDone} />
+                        <SuccessCard data={data} onDone={onDone} personNoun={personNoun} />
                     </div>
                 </div>
             );
@@ -1243,6 +1300,7 @@
         const DemoBar = ({
             enabledModes, onSetPrimary, onToggleQr,
             prefilterStreets, onTogglePrefilter,
+            alphaUnits, onToggleAlphaUnits,
             onFillCard, onFillOrder, onFillAddress,
             onSimulateScan, scanEnabled,
         }) => {
@@ -1369,6 +1427,26 @@
                         </button>
                     )}
 
+                    {/* How to resolve a unit that exists in several wings */}
+                    {primary === 'address' && (
+                        <button type="button" onClick={onToggleAlphaUnits}
+                                className="font-body"
+                                title={alphaUnits
+                                    ? 'Type the wing letter with the unit, e.g. 101N'
+                                    : 'Pick the wing from a list after choosing the street'}
+                                style={{
+                                    display: 'flex', alignItems: 'center', gap: 8,
+                                    padding: '6px 10px', borderRadius: 8,
+                                    border: `1px solid ${alphaUnits ? TEAL : '#3f4b5b'}`,
+                                    backgroundColor: alphaUnits ? 'rgba(0,140,149,0.18)' : '#2b3543',
+                                    color: alphaUnits ? '#e2e8f0' : '#94a3b8',
+                                    cursor: 'pointer', fontSize: '0.82rem',
+                                }}>
+                            {alphaUnits ? 'Alphanumeric units' : 'Wing disambiguation'}
+                            <Switch on={alphaUnits} />
+                        </button>
+                    )}
+
                     {/* Test entries — contextual to the selected venue */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                         <Label>Try</Label>
@@ -1460,6 +1538,11 @@
             // When on, the street list is narrowed to streets that actually have
             // that unit number. Off by default — staff usually know the street.
             const [prefilterStreets, setPrefilterStreets]   = useState(false);
+            // How to resolve a unit number that exists in several wings of one
+            // street (Garden Terrace 101 South/North/West):
+            //   off (default) → pick the wing from a list after choosing the street
+            //   on            → type the wing letter directly, e.g. "101N"
+            const [alphaUnits, setAlphaUnits]               = useState(false);
 
             // Sound prefs
             const [containerSuccessSound, setContainerSuccessSound] = useState('successful-scan');
@@ -1475,6 +1558,11 @@
             const enabledModesRef    = useRef(enabledModes);    enabledModesRef.current = enabledModes;
             const selectedBuildingRef = useRef(selectedBuilding); selectedBuildingRef.current = selectedBuilding;
             const digitsRef           = useRef(digits);          digitsRef.current = digits;
+
+            // Senior living has residents, campuses have students. Derived from the
+            // venue rather than the active view, because USEFULL QR is an add-on
+            // that can sit on top of any venue.
+            const personNoun = primaryOf(enabledModes) === 'address' ? 'resident' : 'student';
 
             // Order ID / Last 4 are fixed-width; unit numbers are freeform.
             const FIXED_LEN = 4;
@@ -1615,7 +1703,16 @@
                 setDigits(prev => {
                     // Unit numbers vary in length, so address entry never
                     // auto-submits — staff confirm with Continue.
-                    if (address) return prev.length >= MAX_UNIT_LEN ? prev : prev + d;
+                    if (address) {
+                        const isLetter = /[A-Za-z]/.test(d);
+                        // A wing letter only ever trails the number, and only one.
+                        if (isLetter) {
+                            if (!prev || wingPart(prev)) return prev;
+                            return prev + d.toUpperCase();
+                        }
+                        if (wingPart(prev)) return prev;   // number can't follow a wing
+                        return prev.length >= MAX_UNIT_LEN ? prev : prev + d;
+                    }
                     if (prev.length >= FIXED_LEN) return prev;
                     const next = prev + d;
                     if (next.length === FIXED_LEN) {
@@ -1787,6 +1884,13 @@
                 setPrefilterStreets(v => !v);
             }, []);
 
+            const handleToggleAlphaUnits = useCallback(() => {
+                setAlphaUnits(v => !v);
+                setDigits('');          // a half-typed unit may not be valid in the other mode
+                setSelectedBuilding(null);
+                setAddressStep('unit');
+            }, []);
+
             // Container scan
             const handleScanContainer = useCallback(() => {
                 playSound(containerSuccessSound);
@@ -1895,6 +1999,14 @@
                         handleAddressContinue();
                         return;
                     }
+                    // Wing letters are typeable too when alphanumeric entry is on
+                    if (alphaUnits && mode === 'address'
+                        && /^[A-Za-z]$/.test(e.key)
+                        && WING_LETTERS.includes(e.key.toUpperCase())) {
+                        e.preventDefault();
+                        handleDigit(e.key);
+                        return;
+                    }
                     if (/^[0-9]$/.test(e.key)) {
                         e.preventDefault();
                         handleDigit(e.key);
@@ -1905,7 +2017,7 @@
                 };
                 window.addEventListener('keydown', onKey);
                 return () => window.removeEventListener('keydown', onKey);
-            }, [phase, mode, addressStep, showAccessModal, handleDigit, handleBackspace, handleAddressContinue]);
+            }, [phase, mode, addressStep, alphaUnits, showAccessModal, handleDigit, handleBackspace, handleAddressContinue]);
 
             // ========================================================
             // RENDER
@@ -1933,6 +2045,8 @@
                     onToggleQr={handleToggleQr}
                     prefilterStreets={prefilterStreets}
                     onTogglePrefilter={handleTogglePrefilter}
+                    alphaUnits={alphaUnits}
+                    onToggleAlphaUnits={handleToggleAlphaUnits}
                     onFillCard={handleFillCard}
                     onFillOrder={handleFillOrder}
                     onFillAddress={handleFillAddress}
@@ -1997,6 +2111,7 @@
                                 onSubmit={handleAddressContinue}
                                 submitLabel="Continue"
                                 submitDisabled={digits.length === 0}
+                                letters={alphaUnits ? WING_LETTERS : null}
                             />
                         </div>
 
@@ -2139,7 +2254,7 @@
                                     </div>
                                     <h1 className="font-display font-extrabold leading-tight"
                                         style={{ color: TEAL, fontSize: isPortrait ? '1.85rem' : '2.4rem' }}>
-                                        Scan the student's<br/>USEFULL QR
+                                        Scan the {personNoun}'s<br/>USEFULL QR
                                     </h1>
                                     <p className="font-body"
                                        style={{ color: '#6B7280', fontSize: isPortrait ? '1rem' : '1.1rem', maxWidth: 360 }}>
@@ -2228,7 +2343,7 @@
                             onSwitchToQR={handleSwitchToQRFromNoAccount}
                         />
                     )}
-                    <OutcomeModal data={phase === 'success' ? successData : null} onDone={resetAll} />
+                    <OutcomeModal data={phase === 'success' ? successData : null} onDone={resetAll} personNoun={personNoun} />
                 </div>
                 </div>
             );
