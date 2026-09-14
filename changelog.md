@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-09-14 — Session 9
+
+### Demo bar
+- Relabelled the simulate control to **"Simulate Container Scan"** and gave it a purpose-drawn takeout-container glyph — the old thin-stroke cup icon was reading as a trash can at 14px. Tooltip now explains what it does: adds one container to the checkout, as if held up to the camera.
+
+### Full keyboard sizing
+- Keys were stuck at a fixed 56px and the keyboard capped at 660px wide, leaving most of a kiosk screen unused. Both now scale with viewport height (`clamp`), so at a 1990×914 window keys go from ~55×56 to **86×87**, and the block widens to 940px.
+- Re-centred the address entry properly: it had been top-aligned as a workaround for the keyboard overlapping the header. Now an inner `margin: auto` wrapper centres it *and* still shows the top when the content is taller than the screen — which `justify-content: center` with overflow does not.
+- Verified no vertical overflow at both 1990×914 landscape and 800×1280 portrait.
+
 ## 2026-09-14 — Session 8
 
 ### Full keyboard, and letters no longer assumed to mean "wing"
